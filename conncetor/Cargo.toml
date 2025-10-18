@@ -1,0 +1,29 @@
+[package]
+name = "connector"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+axum = { version = "0.8.6", features = ["ws"] }
+crossfire = { version = "2.1.6", features = ["tokio"] }
+dashmap = "6.1.0"
+dotenvy = "0.15.7"
+futures = "0.3.31"
+prost = "0.14.1"
+redis = { version = "0.32.7", features = ["tokio-comp"] }
+reqwest = "0.12.24"
+sea-orm = { version = "1.1.17", features = ["runtime-tokio", "sqlx-postgres"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+thiserror = "2.0.17"
+time = { version = "0.3.44", features = ["serde"] }
+tokio = { version = "1.47.1", features = ["full"] }
+tokio-stream = "0.1.17"
+tonic = "0.14.2"
+tonic-prost = "0.14.2"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+
+[build-dependencies]
+tonic-prost-build = "*"

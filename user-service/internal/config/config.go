@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -12,7 +13,11 @@ type AppConfig struct {
 }
 
 func LoadConfig() (*AppConfig, error) {
-	viper.SetConfigFile("app_config.json")
+	cfgPath := "app_config.json"
+
+	cfgAbsPath, _ := filepath.Abs(cfgPath)
+
+	viper.SetConfigFile(cfgAbsPath)
 	viper.SetConfigType("json")
 
 	if err := viper.ReadInConfig(); err != nil {

@@ -31,7 +31,7 @@ func NewServer(cfg *config.AppConfig) (pb.UserServiceServer, error) {
 	}
 
 	// TODO: Use a fixed node number in production to avoid ID collisions
-	node, err := snowflake.NewNode(rand.Int64())
+	node, err := snowflake.NewNode(rand.Int64() % 1024)
 
 	if err != nil {
 		return nil, err

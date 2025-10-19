@@ -11,7 +11,7 @@ import (
 )
 
 func RegisterUser(db *gorm.DB, node *snowflake.Node, user dto.RegisterUserDTO) (string, error) {
-	newID := node.Generate().Base64()
+	newID := "user_" + node.Generate().Base64()
 
 	newUser := po.NewUserPO{
 		ID:           newID,

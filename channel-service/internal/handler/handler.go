@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"poprako-list/internal/config"
+	"channel-service/internal/config"
 
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/hero"
@@ -25,7 +25,7 @@ func NewApp(cfg *config.AppConfig, db *gorm.DB) *iris.Application {
 
 	app := iris.Default()
 
-	app.Party("/health").Get("/health-check", hero.Handler(HealthCheck))
+	app.Get("/health", hero.Handler(HealthCheck))
 
 	return app
 }

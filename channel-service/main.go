@@ -1,6 +1,7 @@
 package main
 
 import (
+	"channel-service/internal/pbserver"
 	"fmt"
 
 	"github.com/joho/godotenv"
@@ -8,6 +9,11 @@ import (
 
 func main() {
 	if err := InitEnv(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if err := pbserver.RunServer(); err != nil {
 		fmt.Println(err)
 		return
 	}

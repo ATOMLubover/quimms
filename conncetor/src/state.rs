@@ -6,6 +6,7 @@ use dashmap::DashMap;
 
 use crate::cache::CacheClient;
 use crate::config::AppConfig;
+use crate::message::InnerMessage;
 use crate::registry::RegistryClient;
 
 /// `AppState` is a cloneable wrapper around `AppStateInner` using `Arc`.
@@ -41,5 +42,5 @@ pub(crate) struct AppStateInner {
     pub config: AppConfig,
     pub cache: CacheClient,
     pub registry: RegistryClient,
-    pub online_users: DashMap<String, MAsyncTx<String>>,
+    pub online_users: DashMap<String, MAsyncTx<InnerMessage>>,
 }

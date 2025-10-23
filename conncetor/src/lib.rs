@@ -3,7 +3,10 @@ use tracing_subscriber::EnvFilter;
 
 mod cache;
 mod config;
+mod consistent_hash;
 mod handler;
+mod message;
+mod model;
 mod registry;
 mod service;
 mod state;

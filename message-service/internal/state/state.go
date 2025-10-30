@@ -1,7 +1,7 @@
 package state
 
 import (
-	"user-service/internal/config"
+	"message-service/internal/config"
 
 	"github.com/bwmarrin/snowflake"
 	"gorm.io/gorm"

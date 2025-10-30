@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option go_package = "message-service/pb";
+
+package message_service;
+
+service MessageService {
+    rpc CreateMessage (CreateMessageRequest) returns (CreateMessageResponse);
+    rpc ListChannelMessages (ListChannelMessagesRequest) returns (ListChannelMessagesResponse);
+}
+
+message CreateMessageRequest {
+    string content = 1;
+    string sender_id = 2;
+    string channel_id = 3;
+}
+
+message CreateMessageResponse {
+    string message_id = 1;
+}
+
+message ListChannelMessagesRequest {
+    string channel_id = 1;
+    int32 limit = 2;
+    int64 latest_time = 3;
+}
+
+message Message {
+    string message_id = 1;
+    string content = 2;
+    string sender_id = 3;
+    string channel_id = 4;
+    int64 created_at = 5;
+}
+
+message ListChannelMessagesResponse {
+    repeated Message messages = 1;
+}

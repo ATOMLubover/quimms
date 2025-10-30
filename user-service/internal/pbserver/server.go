@@ -39,9 +39,9 @@ func NewServer(cfg *config.AppConfig) (pb.UserServiceServer, error) {
 
 	return &serverImpl{
 		state: &state.AppState{
-			Cfg:      cfg,
-			DB:       db,
-			SnowNode: node,
+			Cfg:   cfg,
+			DB:    db,
+			IDGen: node,
 		},
 	}, nil
 }
@@ -55,7 +55,7 @@ func (s *serverImpl) RegisterUser(
 		Password: req.GetPassword(),
 	}
 
-	newID, err := service.RegisterUser(s.state.DB, s.state.SnowNode, user)
+	newID, err := service.RegisterUser(s.state.DB, s.state.IDGen, user)
 
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (s *serverImpl) GetUserInfo(
 	}, nil
 }
 
-func Run() error {
+func RunServer() error {
 	cfg, err := config.LoadConfig()
 
 	if err != nil {

@@ -83,4 +83,8 @@ impl ConsistentHashRing {
         self.ring.clear();
         self.virt_map.clear();
     }
+
+    pub fn len(&self) -> usize {
+        self.virt_map.len()
+    }
 }

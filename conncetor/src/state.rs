@@ -8,6 +8,7 @@ use crate::cache::CacheClient;
 use crate::config::AppConfig;
 use crate::message::InnerMessage;
 use crate::registry::RegistryClient;
+use crate::upstream::UpstreamRouter;
 
 /// `AppState` is a cloneable wrapper around `AppStateInner` using `Arc`.
 #[derive(Clone, Debug)]
@@ -16,12 +17,18 @@ pub(crate) struct AppState {
 }
 
 impl AppState {
-    pub fn new(config: AppConfig, cache: CacheClient, registry: RegistryClient) -> Self {
+    pub fn new(
+        config: AppConfig,
+        cache: CacheClient,
+        registry: RegistryClient,
+        upstreams: UpstreamRouter,
+    ) -> Self {
         Self {
             inner: Arc::new(AppStateInner {
                 config,
                 cache,
                 registry,
+                upstreams,
                 online_users: DashMap::new(),
             }),
         }
@@ -42,5 +49,6 @@ pub(crate) struct AppStateInner {
     pub config: AppConfig,
     pub cache: CacheClient,
     pub registry: RegistryClient,
+    pub upstreams: UpstreamRouter,
     pub online_users: DashMap<String, MAsyncTx<InnerMessage>>,
 }

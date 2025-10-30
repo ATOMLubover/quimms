@@ -65,7 +65,9 @@ func (s *serverImpl) CreateChannel(
 func (s *serverImpl) ListChannelDetails(
 	ctx context.Context,
 	req *pb.ListChannelDetailRequest,
-) (*pb.ListChannelDetailResponse, error) {
+) (
+	*pb.ListChannelDetailResponse, error,
+) {
 	channelIDs, err := service.GetChannelIDsByUserID(s.state.DB, req.GetUserId())
 
 	if err != nil {
@@ -103,9 +105,10 @@ func (s *serverImpl) ListChannelDetails(
 }
 
 func (s *serverImpl) JoinChannel(
-	ctx context.Context,
-	req *pb.JoinChannelRequest,
-) (*pb.JoinChannelResponse, error) {
+	ctx context.Context, req *pb.JoinChannelRequest,
+) (
+	*pb.JoinChannelResponse, error,
+) {
 	err := service.JoinChannel(s.state.DB, s.state.IDGen, req.GetChannelId(), req.GetUserId())
 
 	if err != nil {

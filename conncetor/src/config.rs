@@ -2,6 +2,7 @@ use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
+    pub service_id: i32,
     pub server_host: String,
     pub server_port: u16,
 }

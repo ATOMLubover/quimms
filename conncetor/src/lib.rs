@@ -11,6 +11,7 @@ mod registry;
 mod service;
 mod state;
 mod transfer;
+mod upstream;
 
 use crate::config::AppConfig;
 

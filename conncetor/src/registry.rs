@@ -1,10 +1,12 @@
-use reqwest::{Client, Url};
+use reqwest::{Client, StatusCode, Url};
 
 use crate::registry::upstream::ServiceInstance;
 
 mod upstream;
 
-#[derive(Debug)]
+pub use upstream::{HealthCheck, RegisterService};
+
+#[derive(Clone, Debug)]
 pub struct RegistryClient {
     base_url: Url,
     client: Client,
@@ -36,5 +38,19 @@ impl RegistryClient {
         let instances: Vec<ServiceInstance> = resp.json().await?;
 
         Ok(instances)
+    }
+
+    pub async fn register_service(&self, instance: &RegisterService) -> anyhow::Result<()> {
+        let url = self.base_url.join("/v1/agent/service/register")?;
+
+        let response = self.client.put(url).json(instance).send().await?;
+
+        match response.status() {
+            StatusCode::OK => Ok(()),
+            status => Err(anyhow::anyhow!(
+                "Failed to register service: HTTP {}",
+                status
+            )),
+        }
     }
 }

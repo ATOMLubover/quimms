@@ -1,9 +1,6 @@
-use axum::Json;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use reqwest::StatusCode;
 use serde::Serialize;
 use thiserror::Error;
-use tracing::trace;
 
 pub type ServiceResult<T> = Result<ServiceValue<T>, ServiceError>;
 
@@ -16,30 +13,14 @@ where
 
 #[derive(Debug, Error)]
 pub enum ServiceError {
+    #[error("Tonic transport error: {0}")]
+    TonicTransportError(#[from] tonic::transport::Error),
+    #[error("gRPC status error: {0}")]
+    GprcStatusError(#[from] tonic::Status),
+    #[error("Upstream unaccesible error")]
+    UpstreamUnaccesibleError,
     #[error("Database error: {0}")]
     DatabaseError(#[from] sea_orm::DbErr),
-}
-
-impl IntoResponse for ServiceError {
-    fn into_response(self) -> Response {
-        // Log the error for debugging purposes here,
-        // so that we do not log it again in the match below.
-        trace!("ServiceError occurred: {:?}", self);
-
-        let (status, message) = match &self {
-            ServiceError::DatabaseError(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Internal Server Error".to_string(),
-            ),
-        };
-
-        let body = serde_json::json!({
-            "code": status.as_u16(),
-            "message": message,
-        });
-
-        (status, Json(body)).into_response()
-    }
 }
 
 #[derive(Debug, Serialize)]
@@ -82,21 +63,5 @@ where
         self.data = Some(data);
 
         self
-    }
-}
-
-impl<T> IntoResponse for ServiceValue<T>
-where
-    T: Serialize,
-{
-    fn into_response(self) -> Response {
-        let status = self
-            .code
-            .try_into()
-            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-
-        let body = axum::Json(self);
-
-        (status, body).into_response()
     }
 }

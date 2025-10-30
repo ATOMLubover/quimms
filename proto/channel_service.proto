@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+option go_package = "channel-service/pb";
+
+package channel_service;
+
+service ChannelService {
+    rpc CreateChannel (CreateChannelRequest) returns (CreateChannelResponse);
+    rpc ListChannelDetails (ListChannelDetailRequest) returns (ListChannelDetailResponse);
+    rpc JoinChannel (JoinChannelRequest) returns (JoinChannelResponse);
+}
+
+message CreateChannelRequest {
+    string name = 1;
+}
+
+message CreateChannelResponse {
+    string id = 1;
+    string name = 2;
+}
+
+message ListChannelDetailRequest {
+    string user_id = 1;
+}
+
+message ChannelMember {
+    string user_id = 1;
+    int64 joined_at = 2;
+}
+
+message ChannelDetail {
+    string id = 1;
+    string name = 2;
+    repeated ChannelMember members = 3;
+}
+
+message ListChannelDetailResponse {
+    repeated ChannelDetail channels = 1;
+}
+
+message JoinChannelRequest {
+    string channel_id = 1;
+    string user_id = 2;
+}
+
+message JoinChannelResponse {
+    string channel_id = 1;
+    string user_id = 2;
+}

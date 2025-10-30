@@ -1,7 +1,8 @@
 use std::net::SocketAddrV4;
+use std::time::Duration;
 
 use axum::Router;
-use axum::routing::{self};
+use axum::routing;
 use tokio::net::TcpListener;
 use tracing::debug;
 
@@ -10,8 +11,9 @@ mod health;
 
 use crate::cache::CacheClient;
 use crate::config::AppConfig;
-use crate::registry::RegistryClient;
+use crate::registry::{HealthCheck, RegisterService, RegistryClient};
 use crate::state::AppState;
+use crate::upstream::UpstreamRouter;
 
 async fn init_cache() -> anyhow::Result<CacheClient> {
     let cache = CacheClient::new()
@@ -36,11 +38,78 @@ async fn init_registry() -> anyhow::Result<RegistryClient> {
     Ok(registry)
 }
 
+async fn init_connector(app_config: &AppConfig, registry: &RegistryClient) -> anyhow::Result<()> {
+    let registry_service = RegisterService {
+        id: app_config.service_id.to_string(),
+        name: format!("connector-service-{}", app_config.service_id),
+        address: app_config.server_host.clone(),
+        port: app_config.server_port,
+        health: HealthCheck {
+            http: format!(
+                "http://{}:{}/health/check",
+                app_config.server_host, app_config.server_port
+            ),
+            interval: "10s".to_string(),
+        },
+    };
+
+    registry
+        .register_service(&registry_service)
+        .await
+        .map_err(|err| anyhow::anyhow!("Error when registering service: {}", err))?;
+
+    debug!(
+        "Connector initialized with config: {:?}",
+        format!("{}:{}", app_config.server_host, app_config.server_port)
+    );
+
+    Ok(())
+}
+
+async fn init_upstreams(registry: RegistryClient) -> anyhow::Result<UpstreamRouter> {
+    let mut upstreams = UpstreamRouter::new(registry, None);
+
+    upstreams.full_update().await.map_err(|err| {
+        anyhow::anyhow!(
+            "Error when fully updating initial upstream service lists: {}",
+            err
+        )
+    })?;
+
+    // If succeeded to update, spawn a background task to periodically update the lists.
+    let mut cloned_upstreams = upstreams.clone();
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(30));
+
+        loop {
+            interval.tick().await;
+
+            match cloned_upstreams.full_update().await {
+                Ok(_) => {
+                    debug!("Successfully updated upstream service lists");
+                }
+                Err(err) => {
+                    debug!(
+                        "Error when periodically updating upstream service lists: {}",
+                        err
+                    );
+                }
+            }
+        }
+    });
+
+    Ok(upstreams)
+}
+
 async fn new_router(app_config: &AppConfig) -> anyhow::Result<Router> {
     let cache = init_cache().await?;
     let registry = init_registry().await?;
+    let upstreams = init_upstreams(registry.clone()).await?;
 
-    let app_state = AppState::new(app_config.clone(), cache, registry);
+    init_connector(app_config, &registry).await?;
+
+    let app_state = AppState::new(app_config.clone(), cache, registry, upstreams);
 
     let health_router = Router::new().route("/check", routing::get(health::health_check));
 

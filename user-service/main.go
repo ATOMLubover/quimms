@@ -13,7 +13,7 @@ func main() {
 		return
 	}
 
-	if err := pbserver.Run(); err != nil {
+	if err := pbserver.RunServer(); err != nil {
 		fmt.Println(err)
 		return
 	}

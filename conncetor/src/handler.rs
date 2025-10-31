@@ -8,6 +8,7 @@ use tracing::debug;
 
 mod connect;
 mod health;
+mod result;
 
 use crate::cache::CacheClient;
 use crate::config::AppConfig;

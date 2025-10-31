@@ -19,8 +19,6 @@ pub enum ServiceError {
     GprcStatusError(#[from] tonic::Status),
     #[error("Upstream unaccesible error")]
     UpstreamUnaccesibleError,
-    #[error("Database error: {0}")]
-    DatabaseError(#[from] sea_orm::DbErr),
 }
 
 #[derive(Debug, Serialize)]

@@ -7,7 +7,13 @@ require (
 	gorm.io/gorm v1.31.0
 )
 
-require google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
+require (
+	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/nats-io/nats.go v1.47.0 // indirect
+	github.com/nats-io/nkeys v0.4.11 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
+)
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0

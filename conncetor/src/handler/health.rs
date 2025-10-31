@@ -1,7 +1,5 @@
-use axum::response::IntoResponse;
+use crate::{handler::result::HttpResult, service};
 
-use crate::service;
-
-pub async fn health_check() -> impl IntoResponse {
-    service::health_check().await
+pub async fn health_check() -> HttpResult<()> {
+    service::health_check().await.into()
 }

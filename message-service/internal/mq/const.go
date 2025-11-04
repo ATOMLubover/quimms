@@ -1,5 +1,6 @@
 package mq
 
 const (
-	TopicPushChannelMessage = "channel.message"
+	kTopicPushChanMsg = "channel.message"
+	kMsgChanBufSize   = 1024
 )

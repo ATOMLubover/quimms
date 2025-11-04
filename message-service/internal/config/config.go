@@ -7,8 +7,10 @@ import (
 )
 
 type AppConfig struct {
-	Host string
-	Port string
+	Host     string
+	Port     string
+	MQURL    string
+	RedisURL string
 }
 
 func LoadConfig() (*AppConfig, error) {

@@ -21,7 +21,7 @@ type serverImpl struct {
 	state *state.AppState
 }
 
-func NewServer(cfg *config.AppConfig) (pb.ChannelServiceServer, error) {
+func newServer(cfg *config.AppConfig) (pb.ChannelServiceServer, error) {
 	db, err := repo.InitDB()
 
 	if err != nil {
@@ -128,7 +128,7 @@ func RunServer() error {
 		return err
 	}
 
-	srv, err := NewServer(cfg)
+	srv, err := newServer(cfg)
 
 	if err != nil {
 		return err

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math/rand/v2"
 	"net"
+	"strconv"
 
 	"user-service/internal/config"
 	"user-service/internal/model/dto"
+	"user-service/internal/registry"
 	"user-service/internal/repo"
 	"user-service/internal/service"
 	"user-service/internal/state"
@@ -30,12 +31,23 @@ func newServer(cfg *config.AppConfig) (pb.UserServiceServer, error) {
 		return nil, err
 	}
 
-	// TODO: Use a fixed node number in production to avoid ID collisions
-	node, err := snowflake.NewNode(rand.Int64() % 1024)
+	serviceIDNum, err := strconv.Atoi(cfg.ServiceID)
 
 	if err != nil {
 		return nil, err
 	}
+
+	node, err := snowflake.NewNode(int64(serviceIDNum))
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = registry.RunRegistryClient(
+		cfg.ConsulsAddr,
+		cfg.ServiceID, cfg.ServiceName,
+		cfg.Host, int(cfg.Port),
+	)
 
 	return &serverImpl{
 		state: &state.AppState{
@@ -116,7 +128,7 @@ func RunServer() error {
 		return err
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.Host, cfg.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
 
 	if err != nil {
 		return err

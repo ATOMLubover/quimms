@@ -2,6 +2,7 @@ package pbserver
 
 import (
 	"channel-service/internal/config"
+	"channel-service/internal/registry"
 	"channel-service/internal/repo"
 	"channel-service/internal/service"
 	"channel-service/internal/state"
@@ -9,8 +10,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math/rand/v2"
 	"net"
+	"strconv"
 
 	"github.com/bwmarrin/snowflake"
 	"google.golang.org/grpc"
@@ -28,21 +29,30 @@ func newServer(cfg *config.AppConfig) (pb.ChannelServiceServer, error) {
 		return nil, err
 	}
 
-	// TODO: Use a fixed node number in production to avoid ID collisions
-	node, err := snowflake.NewNode(rand.Int64()%1024 + 100)
+	serviceIDNum, err := strconv.Atoi(cfg.ServiceID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	state := &state.AppState{
-		Cfg:   cfg,
-		DB:    db,
-		IDGen: node,
+	node, err := snowflake.NewNode(int64(serviceIDNum))
+
+	if err != nil {
+		return nil, err
 	}
 
+	err = registry.RunRegistryClient(
+		cfg.ConsulsAddr,
+		cfg.ServiceID, cfg.ServiceName,
+		cfg.Host, int(cfg.Port),
+	)
+
 	return &serverImpl{
-		state: state,
+		state: &state.AppState{
+			Cfg:   cfg,
+			DB:    db,
+			IDGen: node,
+		},
 	}, nil
 }
 
@@ -134,7 +144,7 @@ func RunServer() error {
 		return err
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.Host, cfg.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
 
 	if err != nil {
 		return err

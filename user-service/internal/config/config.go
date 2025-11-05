@@ -8,8 +8,11 @@ import (
 )
 
 type AppConfig struct {
-	Host string
-	Port string
+	ServiceID   string `mapstructure:"service_id"`
+	ServiceName string `mapstructure:"service_name"`
+	Host        string `mapstructure:"host"`
+	Port        uint16 `mapstructure:"port"`
+	ConsulsAddr string `mapstructure:"consuls_addr"`
 }
 
 func LoadConfig() (*AppConfig, error) {

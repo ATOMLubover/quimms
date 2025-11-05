@@ -1,0 +1,9 @@
+{
+    "service_id": "1",
+    "service_name": "message-service",
+    "host": "127.0.0.1",
+    "port": 8010,
+    "mq_url": "nats://localhost:4222",
+    "redis_url": "localhost:6379",
+    "consuls_addr": "http://localhost:8500"
+}

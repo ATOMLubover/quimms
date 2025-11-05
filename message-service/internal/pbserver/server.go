@@ -4,16 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math/rand/v2"
 	"message-service/internal/cache"
 	"message-service/internal/config"
 	"message-service/internal/model/dto"
 	"message-service/internal/mq"
+	"message-service/internal/registry"
 	"message-service/internal/repo"
 	"message-service/internal/service"
 	"message-service/internal/state"
 	"message-service/pb"
 	"net"
+	"strconv"
 
 	"github.com/bwmarrin/snowflake"
 	"google.golang.org/grpc"
@@ -31,7 +32,15 @@ func newServer(cfg *config.AppConfig) (pb.MessageServiceServer, error) {
 		return nil, err
 	}
 
-	node, err := snowflake.NewNode(rand.Int64()%1024 + 200)
+	slog.Info("Database connected successfully")
+
+	serviceIDNum, err := strconv.Atoi(cfg.ServiceID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := snowflake.NewNode(int64(serviceIDNum))
 
 	if err != nil {
 		return nil, err
@@ -43,7 +52,27 @@ func newServer(cfg *config.AppConfig) (pb.MessageServiceServer, error) {
 		return nil, err
 	}
 
+	slog.Info("Message Queue connected successfully")
+
 	cacheCli, err := cache.NewClient(cfg.RedisURL)
+
+	if err != nil {
+		return nil, err
+	}
+
+	slog.Info("Cache connected successfully")
+
+	err = registry.RunRegistryClient(
+		cfg.ConsulsAddr,
+		cfg.ServiceID, cfg.ServiceName,
+		cfg.Host, int(cfg.Port),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	slog.Info("Service registered successfully")
 
 	return &serverImpl{
 		state: &state.AppState{
@@ -98,16 +127,16 @@ func (s *serverImpl) ListChannelMessages(
 		return nil, err
 	}
 
-	var messages []*pb.Message
+	messages := make([]*pb.Message, len(messageVOs))
 
-	for _, messageVO := range messageVOs {
-		messages = append(messages, &pb.Message{
+	for i, messageVO := range messageVOs {
+		messages[i] = &pb.Message{
 			MessageId: messageVO.ID,
 			ChannelId: messageVO.ChannelID,
 			SenderId:  messageVO.SenderID,
 			Content:   messageVO.Content,
 			CreatedAt: messageVO.CreatedAt,
-		})
+		}
 	}
 
 	return &pb.ListChannelMessagesResponse{
@@ -128,7 +157,7 @@ func RunServer() error {
 		return err
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.Host, cfg.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
 
 	if err != nil {
 		return err

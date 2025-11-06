@@ -114,6 +114,32 @@ func (s *serverImpl) ListChannelDetails(
 	}, nil
 }
 
+func (s *serverImpl) ListChannelMembers(
+	ctx context.Context,
+	req *pb.ListChannelMembersRequest,
+) (
+	*pb.ListChannelMembersResponse, error,
+) {
+	members, err := service.GetChannelMembers(s.state.DB, req.GetChannelId())
+
+	if err != nil {
+		return nil, err
+	}
+
+	var pbMembers []*pb.ChannelMember
+
+	for _, member := range members {
+		pbMembers = append(pbMembers, &pb.ChannelMember{
+			UserId:   member.UserID,
+			JoinedAt: int64(member.JoinedAt),
+		})
+	}
+
+	return &pb.ListChannelMembersResponse{
+		Members: pbMembers,
+	}, nil
+}
+
 func (s *serverImpl) JoinChannel(
 	ctx context.Context, req *pb.JoinChannelRequest,
 ) (

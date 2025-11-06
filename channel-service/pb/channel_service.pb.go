@@ -317,6 +317,94 @@ func (x *ListChannelDetailResponse) GetChannels() []*ChannelDetail {
 	return nil
 }
 
+type ListChannelMembersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListChannelMembersRequest) Reset() {
+	*x = ListChannelMembersRequest{}
+	mi := &file_proto_channel_service_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListChannelMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListChannelMembersRequest) ProtoMessage() {}
+
+func (x *ListChannelMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_channel_service_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListChannelMembersRequest.ProtoReflect.Descriptor instead.
+func (*ListChannelMembersRequest) Descriptor() ([]byte, []int) {
+	return file_proto_channel_service_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ListChannelMembersRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+type ListChannelMembersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Members       []*ChannelMember       `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListChannelMembersResponse) Reset() {
+	*x = ListChannelMembersResponse{}
+	mi := &file_proto_channel_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListChannelMembersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListChannelMembersResponse) ProtoMessage() {}
+
+func (x *ListChannelMembersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_channel_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListChannelMembersResponse.ProtoReflect.Descriptor instead.
+func (*ListChannelMembersResponse) Descriptor() ([]byte, []int) {
+	return file_proto_channel_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListChannelMembersResponse) GetMembers() []*ChannelMember {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
 type JoinChannelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
@@ -327,7 +415,7 @@ type JoinChannelRequest struct {
 
 func (x *JoinChannelRequest) Reset() {
 	*x = JoinChannelRequest{}
-	mi := &file_proto_channel_service_proto_msgTypes[6]
+	mi := &file_proto_channel_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -339,7 +427,7 @@ func (x *JoinChannelRequest) String() string {
 func (*JoinChannelRequest) ProtoMessage() {}
 
 func (x *JoinChannelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_channel_service_proto_msgTypes[6]
+	mi := &file_proto_channel_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,7 +440,7 @@ func (x *JoinChannelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinChannelRequest.ProtoReflect.Descriptor instead.
 func (*JoinChannelRequest) Descriptor() ([]byte, []int) {
-	return file_proto_channel_service_proto_rawDescGZIP(), []int{6}
+	return file_proto_channel_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *JoinChannelRequest) GetChannelId() string {
@@ -379,7 +467,7 @@ type JoinChannelResponse struct {
 
 func (x *JoinChannelResponse) Reset() {
 	*x = JoinChannelResponse{}
-	mi := &file_proto_channel_service_proto_msgTypes[7]
+	mi := &file_proto_channel_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -391,7 +479,7 @@ func (x *JoinChannelResponse) String() string {
 func (*JoinChannelResponse) ProtoMessage() {}
 
 func (x *JoinChannelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_channel_service_proto_msgTypes[7]
+	mi := &file_proto_channel_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -404,7 +492,7 @@ func (x *JoinChannelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinChannelResponse.ProtoReflect.Descriptor instead.
 func (*JoinChannelResponse) Descriptor() ([]byte, []int) {
-	return file_proto_channel_service_proto_rawDescGZIP(), []int{7}
+	return file_proto_channel_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *JoinChannelResponse) GetChannelId() string {
@@ -441,7 +529,12 @@ const file_proto_channel_service_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x128\n" +
 	"\amembers\x18\x03 \x03(\v2\x1e.channel_service.ChannelMemberR\amembers\"W\n" +
 	"\x19ListChannelDetailResponse\x12:\n" +
-	"\bchannels\x18\x01 \x03(\v2\x1e.channel_service.ChannelDetailR\bchannels\"L\n" +
+	"\bchannels\x18\x01 \x03(\v2\x1e.channel_service.ChannelDetailR\bchannels\":\n" +
+	"\x19ListChannelMembersRequest\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x01 \x01(\tR\tchannelId\"V\n" +
+	"\x1aListChannelMembersResponse\x128\n" +
+	"\amembers\x18\x01 \x03(\v2\x1e.channel_service.ChannelMemberR\amembers\"L\n" +
 	"\x12JoinChannelRequest\x12\x1d\n" +
 	"\n" +
 	"channel_id\x18\x01 \x01(\tR\tchannelId\x12\x17\n" +
@@ -449,10 +542,11 @@ const file_proto_channel_service_proto_rawDesc = "" +
 	"\x13JoinChannelResponse\x12\x1d\n" +
 	"\n" +
 	"channel_id\x18\x01 \x01(\tR\tchannelId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId2\xb7\x02\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId2\xa6\x03\n" +
 	"\x0eChannelService\x12^\n" +
 	"\rCreateChannel\x12%.channel_service.CreateChannelRequest\x1a&.channel_service.CreateChannelResponse\x12k\n" +
-	"\x12ListChannelDetails\x12).channel_service.ListChannelDetailRequest\x1a*.channel_service.ListChannelDetailResponse\x12X\n" +
+	"\x12ListChannelDetails\x12).channel_service.ListChannelDetailRequest\x1a*.channel_service.ListChannelDetailResponse\x12m\n" +
+	"\x12ListChannelMembers\x12*.channel_service.ListChannelMembersRequest\x1a+.channel_service.ListChannelMembersResponse\x12X\n" +
 	"\vJoinChannel\x12#.channel_service.JoinChannelRequest\x1a$.channel_service.JoinChannelResponseB\x14Z\x12channel-service/pbb\x06proto3"
 
 var (
@@ -467,31 +561,36 @@ func file_proto_channel_service_proto_rawDescGZIP() []byte {
 	return file_proto_channel_service_proto_rawDescData
 }
 
-var file_proto_channel_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_proto_channel_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_proto_channel_service_proto_goTypes = []any{
-	(*CreateChannelRequest)(nil),      // 0: channel_service.CreateChannelRequest
-	(*CreateChannelResponse)(nil),     // 1: channel_service.CreateChannelResponse
-	(*ListChannelDetailRequest)(nil),  // 2: channel_service.ListChannelDetailRequest
-	(*ChannelMember)(nil),             // 3: channel_service.ChannelMember
-	(*ChannelDetail)(nil),             // 4: channel_service.ChannelDetail
-	(*ListChannelDetailResponse)(nil), // 5: channel_service.ListChannelDetailResponse
-	(*JoinChannelRequest)(nil),        // 6: channel_service.JoinChannelRequest
-	(*JoinChannelResponse)(nil),       // 7: channel_service.JoinChannelResponse
+	(*CreateChannelRequest)(nil),       // 0: channel_service.CreateChannelRequest
+	(*CreateChannelResponse)(nil),      // 1: channel_service.CreateChannelResponse
+	(*ListChannelDetailRequest)(nil),   // 2: channel_service.ListChannelDetailRequest
+	(*ChannelMember)(nil),              // 3: channel_service.ChannelMember
+	(*ChannelDetail)(nil),              // 4: channel_service.ChannelDetail
+	(*ListChannelDetailResponse)(nil),  // 5: channel_service.ListChannelDetailResponse
+	(*ListChannelMembersRequest)(nil),  // 6: channel_service.ListChannelMembersRequest
+	(*ListChannelMembersResponse)(nil), // 7: channel_service.ListChannelMembersResponse
+	(*JoinChannelRequest)(nil),         // 8: channel_service.JoinChannelRequest
+	(*JoinChannelResponse)(nil),        // 9: channel_service.JoinChannelResponse
 }
 var file_proto_channel_service_proto_depIdxs = []int32{
 	3, // 0: channel_service.ChannelDetail.members:type_name -> channel_service.ChannelMember
 	4, // 1: channel_service.ListChannelDetailResponse.channels:type_name -> channel_service.ChannelDetail
-	0, // 2: channel_service.ChannelService.CreateChannel:input_type -> channel_service.CreateChannelRequest
-	2, // 3: channel_service.ChannelService.ListChannelDetails:input_type -> channel_service.ListChannelDetailRequest
-	6, // 4: channel_service.ChannelService.JoinChannel:input_type -> channel_service.JoinChannelRequest
-	1, // 5: channel_service.ChannelService.CreateChannel:output_type -> channel_service.CreateChannelResponse
-	5, // 6: channel_service.ChannelService.ListChannelDetails:output_type -> channel_service.ListChannelDetailResponse
-	7, // 7: channel_service.ChannelService.JoinChannel:output_type -> channel_service.JoinChannelResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 2: channel_service.ListChannelMembersResponse.members:type_name -> channel_service.ChannelMember
+	0, // 3: channel_service.ChannelService.CreateChannel:input_type -> channel_service.CreateChannelRequest
+	2, // 4: channel_service.ChannelService.ListChannelDetails:input_type -> channel_service.ListChannelDetailRequest
+	6, // 5: channel_service.ChannelService.ListChannelMembers:input_type -> channel_service.ListChannelMembersRequest
+	8, // 6: channel_service.ChannelService.JoinChannel:input_type -> channel_service.JoinChannelRequest
+	1, // 7: channel_service.ChannelService.CreateChannel:output_type -> channel_service.CreateChannelResponse
+	5, // 8: channel_service.ChannelService.ListChannelDetails:output_type -> channel_service.ListChannelDetailResponse
+	7, // 9: channel_service.ChannelService.ListChannelMembers:output_type -> channel_service.ListChannelMembersResponse
+	9, // 10: channel_service.ChannelService.JoinChannel:output_type -> channel_service.JoinChannelResponse
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_channel_service_proto_init() }
@@ -505,7 +604,7 @@ func file_proto_channel_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_channel_service_proto_rawDesc), len(file_proto_channel_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

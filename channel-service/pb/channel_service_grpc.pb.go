@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ChannelService_CreateChannel_FullMethodName      = "/channel_service.ChannelService/CreateChannel"
 	ChannelService_ListChannelDetails_FullMethodName = "/channel_service.ChannelService/ListChannelDetails"
+	ChannelService_ListChannelMembers_FullMethodName = "/channel_service.ChannelService/ListChannelMembers"
 	ChannelService_JoinChannel_FullMethodName        = "/channel_service.ChannelService/JoinChannel"
 )
 
@@ -30,6 +31,7 @@ const (
 type ChannelServiceClient interface {
 	CreateChannel(ctx context.Context, in *CreateChannelRequest, opts ...grpc.CallOption) (*CreateChannelResponse, error)
 	ListChannelDetails(ctx context.Context, in *ListChannelDetailRequest, opts ...grpc.CallOption) (*ListChannelDetailResponse, error)
+	ListChannelMembers(ctx context.Context, in *ListChannelMembersRequest, opts ...grpc.CallOption) (*ListChannelMembersResponse, error)
 	JoinChannel(ctx context.Context, in *JoinChannelRequest, opts ...grpc.CallOption) (*JoinChannelResponse, error)
 }
 
@@ -61,6 +63,16 @@ func (c *channelServiceClient) ListChannelDetails(ctx context.Context, in *ListC
 	return out, nil
 }
 
+func (c *channelServiceClient) ListChannelMembers(ctx context.Context, in *ListChannelMembersRequest, opts ...grpc.CallOption) (*ListChannelMembersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListChannelMembersResponse)
+	err := c.cc.Invoke(ctx, ChannelService_ListChannelMembers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *channelServiceClient) JoinChannel(ctx context.Context, in *JoinChannelRequest, opts ...grpc.CallOption) (*JoinChannelResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(JoinChannelResponse)
@@ -77,6 +89,7 @@ func (c *channelServiceClient) JoinChannel(ctx context.Context, in *JoinChannelR
 type ChannelServiceServer interface {
 	CreateChannel(context.Context, *CreateChannelRequest) (*CreateChannelResponse, error)
 	ListChannelDetails(context.Context, *ListChannelDetailRequest) (*ListChannelDetailResponse, error)
+	ListChannelMembers(context.Context, *ListChannelMembersRequest) (*ListChannelMembersResponse, error)
 	JoinChannel(context.Context, *JoinChannelRequest) (*JoinChannelResponse, error)
 	mustEmbedUnimplementedChannelServiceServer()
 }
@@ -93,6 +106,9 @@ func (UnimplementedChannelServiceServer) CreateChannel(context.Context, *CreateC
 }
 func (UnimplementedChannelServiceServer) ListChannelDetails(context.Context, *ListChannelDetailRequest) (*ListChannelDetailResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListChannelDetails not implemented")
+}
+func (UnimplementedChannelServiceServer) ListChannelMembers(context.Context, *ListChannelMembersRequest) (*ListChannelMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListChannelMembers not implemented")
 }
 func (UnimplementedChannelServiceServer) JoinChannel(context.Context, *JoinChannelRequest) (*JoinChannelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method JoinChannel not implemented")
@@ -154,6 +170,24 @@ func _ChannelService_ListChannelDetails_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChannelService_ListChannelMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListChannelMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChannelServiceServer).ListChannelMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChannelService_ListChannelMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChannelServiceServer).ListChannelMembers(ctx, req.(*ListChannelMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ChannelService_JoinChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(JoinChannelRequest)
 	if err := dec(in); err != nil {
@@ -186,6 +220,10 @@ var ChannelService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListChannelDetails",
 			Handler:    _ChannelService_ListChannelDetails_Handler,
+		},
+		{
+			MethodName: "ListChannelMembers",
+			Handler:    _ChannelService_ListChannelMembers_Handler,
 		},
 		{
 			MethodName: "JoinChannel",

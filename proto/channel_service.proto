@@ -7,6 +7,7 @@ package channel_service;
 service ChannelService {
     rpc CreateChannel (CreateChannelRequest) returns (CreateChannelResponse);
     rpc ListChannelDetails (ListChannelDetailRequest) returns (ListChannelDetailResponse);
+    rpc ListChannelMembers(ListChannelMembersRequest) returns (ListChannelMembersResponse);
     rpc JoinChannel (JoinChannelRequest) returns (JoinChannelResponse);
 }
 
@@ -36,6 +37,14 @@ message ChannelDetail {
 
 message ListChannelDetailResponse {
     repeated ChannelDetail channels = 1;
+}
+
+message ListChannelMembersRequest {
+    string channel_id = 1;
+}
+
+message ListChannelMembersResponse {
+    repeated ChannelMember members = 1;
 }
 
 message JoinChannelRequest {

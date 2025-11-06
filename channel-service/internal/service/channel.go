@@ -14,27 +14,27 @@ func CreateChannel(db *gorm.DB, node *snowflake.Node, name string) (string, erro
 	return newID, repo.CreateChannel(db, name, newID)
 }
 
-func GetChannelDetailsByIDs(db *gorm.DB, ids []string) ([]vo.ChannelInfoVO, error) {
+func GetChannelDetailsByIDs(db *gorm.DB, ids []string) ([]vo.ChannelVO, error) {
 	channelsPO, membersPO, err := repo.GetChannelDetailsByIDs(db, ids)
 
 	if err != nil {
 		return nil, err
 	}
 
-	memberMap := make(map[string][]vo.ChannelMemberInfoVO)
+	memberMap := make(map[string][]vo.ChannelMemberVO)
 
 	for _, member := range membersPO {
-		memberMap[member.ChannelID] = append(memberMap[member.ChannelID], vo.ChannelMemberInfoVO{
+		memberMap[member.ChannelID] = append(memberMap[member.ChannelID], vo.ChannelMemberVO{
 			ChannelID: member.ChannelID,
 			UserID:    member.UserID,
 			JoinedAt:  member.CreatedAt,
 		})
 	}
 
-	var channelVOs []vo.ChannelInfoVO
+	var channelVOs []vo.ChannelVO
 
 	for _, channel := range channelsPO {
-		channelVO := vo.ChannelInfoVO{
+		channelVO := vo.ChannelVO{
 			ID:      channel.ID,
 			Name:    channel.Name,
 			Members: memberMap[channel.ID],

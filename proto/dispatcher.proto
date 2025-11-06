@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "dispatcher/pb";
+
+package dispatcher;
+
+// Connector is the Server, and Dispatcher is the Client.
+// Dispatcher will connect to Connector after pulling from the Registry.
+service Dispatcher {
+    rpc DispatchMessage (stream DispatchMessageRequest) returns (DispatchMessageResponse);
+}
+
+message DispatchMessageRequest {
+    string user_id = 1;
+    string channel_id = 2;
+    string content = 3;
+    int64 created_at = 4;
+}
+
+message DispatchMessageResponse {
+    bool successful = 1;
+}

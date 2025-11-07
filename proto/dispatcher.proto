@@ -7,14 +7,15 @@ package dispatcher;
 // Connector is the Server, and Dispatcher is the Client.
 // Dispatcher will connect to Connector after pulling from the Registry.
 service Dispatcher {
-    rpc DispatchMessage (stream DispatchMessageRequest) returns (DispatchMessageResponse);
+    rpc DispatchMessage (DispatchMessageRequest) returns (DispatchMessageResponse);
 }
 
 message DispatchMessageRequest {
-    string user_id = 1;
-    string channel_id = 2;
-    string content = 3;
-    int64 created_at = 4;
+    string message_id = 1;
+    string user_id = 2;
+    string channel_id = 3;
+    string content = 4;
+    int64 created_at = 5;
 }
 
 message DispatchMessageResponse {

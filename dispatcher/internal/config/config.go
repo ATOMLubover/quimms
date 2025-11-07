@@ -7,7 +7,7 @@ import (
 )
 
 type AppConfig struct {
-	MQURL       string `mapstructure:"mq_url"`
+	NatsURL     string `mapstructure:"nats_url"`
 	RedisAddr   string `mapstructure:"redis_address"`
 	ConsulsAddr string `mapstructure:"consuls_address"`
 }

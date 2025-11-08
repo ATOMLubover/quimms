@@ -12,7 +12,7 @@ mod result;
 
 use crate::cache::CacheClient;
 use crate::config::AppConfig;
-use crate::registry::{HealthCheck, RegisterService, RegistryClient};
+use crate::registry::{ConsulClient, HealthCheck, RegisterService};
 use crate::state::AppState;
 use crate::upstream::UpstreamRouter;
 
@@ -31,15 +31,15 @@ async fn init_cache() -> anyhow::Result<CacheClient> {
     Ok(cache)
 }
 
-async fn init_registry() -> anyhow::Result<RegistryClient> {
-    let registry = RegistryClient::new()?;
+async fn init_registry() -> anyhow::Result<ConsulClient> {
+    let registry = ConsulClient::new()?;
 
     debug!("Registry center client initialized");
 
     Ok(registry)
 }
 
-async fn init_connector(app_config: &AppConfig, registry: &RegistryClient) -> anyhow::Result<()> {
+async fn init_connector(app_config: &AppConfig, registry: &ConsulClient) -> anyhow::Result<()> {
     let registry_service = RegisterService {
         id: app_config.service_id.to_string(),
         name: format!("connector-service-{}", app_config.service_id),
@@ -67,7 +67,7 @@ async fn init_connector(app_config: &AppConfig, registry: &RegistryClient) -> an
     Ok(())
 }
 
-async fn init_upstreams(registry: RegistryClient) -> anyhow::Result<UpstreamRouter> {
+async fn init_upstreams(registry: ConsulClient) -> anyhow::Result<UpstreamRouter> {
     let mut upstreams = UpstreamRouter::new(registry, None);
 
     upstreams.full_update().await.map_err(|err| {

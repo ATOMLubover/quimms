@@ -3,34 +3,34 @@ pub mod dto {
         use serde::{Deserialize, Serialize};
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct RegisterUserRequest {
+        pub struct RegisterUserReq {
             pub username: String,
             pub password: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct RegisterUserResponse {
+        pub struct RegisterUserRsp {
             pub user_id: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct LoginUserRequest {
+        pub struct LoginUserReq {
             pub username: String,
             pub password: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct LoginUserResponse {
+        pub struct LoginUserRsp {
             pub token: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct GetUserInfoRequest {
+        pub struct GetUserInfoReq {
             pub user_id: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct GetUserInfoResponse {
+        pub struct GetUserInfoRsp {
             pub user_id: String,
             pub username: String,
             pub created_at: i64,
@@ -41,13 +41,13 @@ pub mod dto {
         use serde::{Deserialize, Serialize};
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct CreateChannelRequest {
+        pub struct CreateChannelReq {
             pub name: String,
             pub creator_id: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct CreateChannelResponse {
+        pub struct CreateChannelRsp {
             pub channel_id: String,
             pub channel_name: String,
         }
@@ -66,23 +66,23 @@ pub mod dto {
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct ListChannelDetailsRequest {
+        pub struct ListChannelDetailsReq {
             pub user_id: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct ListChannelDetailsResponse {
+        pub struct ListChannelDetailsRsp {
             pub channels: Vec<ChannelDetail>,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct JoinChannelRequest {
+        pub struct JoinChannelReq {
             pub channel_id: String,
             pub user_id: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct JoinChannelResponse {
+        pub struct JoinChannelRsp {
             pub channel_id: String,
             pub user_id: String,
         }
@@ -92,14 +92,14 @@ pub mod dto {
         use serde::{Deserialize, Serialize};
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct CreateMessageRequest {
+        pub struct CreateMessageReq {
             pub channel_id: String,
             pub sender_id: String,
             pub content: String,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct CreateMessageResponse {
+        pub struct CreateMessageRsp {
             pub message_id: String,
         }
 
@@ -113,14 +113,14 @@ pub mod dto {
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct ListMessagesRequest {
+        pub struct ListMessagesReq {
             pub channel_id: String,
             pub limit: usize,
             pub latest_time: i64,
         }
 
         #[derive(Debug, Serialize, Deserialize)]
-        pub struct ListMessagesResponse {
+        pub struct ListMessagesRsp {
             pub messages: Vec<MessageDetail>,
         }
     }

@@ -3,7 +3,8 @@ use std::collections::HashMap;
 pub type Hasher = fn(&str) -> u64;
 
 /// Consistent Hash Ring implementation with virtual nodes (replicas).
-pub struct ConsistentHashRing {
+#[derive(Debug)]
+pub struct ConsistHashRing {
     hasher: Hasher,
 
     /// Stores the virtual node number on ring.
@@ -14,7 +15,7 @@ pub struct ConsistentHashRing {
     replicas: usize,
 }
 
-impl ConsistentHashRing {
+impl ConsistHashRing {
     pub fn new(replicas: usize, hasher: Hasher) -> Self {
         Self {
             hasher,

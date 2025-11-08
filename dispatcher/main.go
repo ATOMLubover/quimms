@@ -130,7 +130,7 @@ func initConfig() (*config.AppConfig, error) {
 }
 
 func initNATS(cfg *config.AppConfig) (*nats.Conn, error) {
-	return nats.Connect(cfg.NatsURL)
+	return nats.Connect(cfg.NATSURL)
 }
 
 func initRedis(cfg *config.AppConfig) (*redis.Client, error) {
@@ -147,7 +147,7 @@ func initRedis(cfg *config.AppConfig) (*redis.Client, error) {
 
 func initRegistry(cfg *config.AppConfig) (*registry.ConsulClient[*grpc.ClientConn], error) {
 	return registry.NewConsulClient(
-		cfg.ConsulsAddr,
+		cfg.ConsulAddr,
 		transFunc,
 		cleanFunc,
 	)
@@ -162,7 +162,7 @@ func initChanSrv(reg *registry.ConsulClient[*grpc.ClientConn]) (*state.ChanSrvBa
 }
 
 func initConnSrv(cfg *config.AppConfig, stopCh <-chan struct{}) (*registry.ConsulClient[*grpc.ClientConn], error) {
-	return newConnSrv(cfg.ConsulsAddr, stopCh)
+	return newConnSrv(cfg.ConsulAddr, stopCh)
 }
 
 func initPool() (*ants.Pool, error) {

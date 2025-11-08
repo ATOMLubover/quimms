@@ -3,8 +3,7 @@ mod user_service {
 }
 
 use crate::model::dto::{
-    GetUserInfoResponse, LoginUserRequest, LoginUserResponse, RegisterUserRequest,
-    RegisterUserResponse,
+    GetUserInfoResponse, LoginUserRequest, LoginUserResponse, RegisterUserReq, RegisterUserRsp,
 };
 // TODO: Do not create a new client for each request. Implement connection pooling.
 use crate::service::user::user_service::user_service_client::UserServiceClient;
@@ -15,15 +14,13 @@ use crate::{
 };
 
 pub async fn register_user(
-    request: RegisterUserRequest,
+    request: RegisterUserReq,
     upstreams: &UpstreamRouter,
-) -> ServiceResult<RegisterUserResponse> {
+) -> ServiceResult<RegisterUserRsp> {
     let server = upstreams
         .pick_service(Service::UserService, &request.username)
         .await
-        .ok_or_else(|| {
-            ServiceError::UpstreamUnaccesibleError
-        })?;
+        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?;
 
     let mut client = UserServiceClient::new(server);
 
@@ -36,7 +33,7 @@ pub async fn register_user(
 
     let grpc_response = response.into_inner();
 
-    Ok(succeed().with_data(RegisterUserResponse {
+    Ok(succeed().with_data(RegisterUserRsp {
         user_id: grpc_response.user_id,
     }))
 }
@@ -48,9 +45,7 @@ pub async fn login_user(
     let server = upstreams
         .pick_service(Service::UserService, &request.username)
         .await
-        .ok_or_else(|| {
-            ServiceError::UpstreamUnaccesibleError
-        })?;
+        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?;
 
     let mut client = UserServiceClient::new(server);
 

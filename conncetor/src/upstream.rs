@@ -8,21 +8,21 @@ use tracing::debug;
 use tracing::error;
 
 use crate::{
-    consistent_hash::{ConsistentHashRing, Hasher},
-    registry::RegistryClient,
+    consist_hash::{ConsistHashRing, Hasher},
+    registry::ConsulClient,
 };
 
 #[derive(Clone)]
 pub struct UpstreamRouter {
-    registry: RegistryClient,
+    registry: ConsulClient,
 
-    user_svr_addr: Arc<RwLock<ConsistentHashRing>>,
+    user_svr_addr: Arc<RwLock<ConsistHashRing>>,
     user_srv_channels: DashMap<String, Channel>,
 
-    channel_svr_addr: Arc<RwLock<ConsistentHashRing>>,
+    channel_svr_addr: Arc<RwLock<ConsistHashRing>>,
     channel_srv_channels: DashMap<String, Channel>,
 
-    message_svr_addr: Arc<RwLock<ConsistentHashRing>>,
+    message_svr_addr: Arc<RwLock<ConsistHashRing>>,
     message_srv_channels: DashMap<String, Channel>,
 }
 
@@ -56,22 +56,16 @@ impl UpstreamRouter {
         default_hasher.finish()
     };
 
-    pub fn new(registry: RegistryClient, hasher: Option<Hasher>) -> Self {
+    pub fn new(registry: ConsulClient, hasher: Option<Hasher>) -> Self {
         let hasher = hasher.unwrap_or(Self::DEFAULT_HASHER);
 
         Self {
             registry,
-            user_svr_addr: Arc::new(RwLock::new(ConsistentHashRing::new(Self::REPLICAS, hasher))),
+            user_svr_addr: Arc::new(RwLock::new(ConsistHashRing::new(Self::REPLICAS, hasher))),
             user_srv_channels: DashMap::new(),
-            channel_svr_addr: Arc::new(RwLock::new(ConsistentHashRing::new(
-                Self::REPLICAS,
-                hasher,
-            ))),
+            channel_svr_addr: Arc::new(RwLock::new(ConsistHashRing::new(Self::REPLICAS, hasher))),
             channel_srv_channels: DashMap::new(),
-            message_svr_addr: Arc::new(RwLock::new(ConsistentHashRing::new(
-                Self::REPLICAS,
-                hasher,
-            ))),
+            message_svr_addr: Arc::new(RwLock::new(ConsistHashRing::new(Self::REPLICAS, hasher))),
             message_srv_channels: DashMap::new(),
         }
     }
@@ -104,7 +98,7 @@ impl UpstreamRouter {
             service, &instances
         );
 
-        let mut new_ring = ConsistentHashRing::new(Self::REPLICAS, Self::DEFAULT_HASHER);
+        let mut new_ring = ConsistHashRing::new(Self::REPLICAS, Self::DEFAULT_HASHER);
         let new_map = DashMap::new();
 
         for inst in &instances {

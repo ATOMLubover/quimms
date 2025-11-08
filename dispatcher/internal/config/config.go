@@ -7,9 +7,9 @@ import (
 )
 
 type AppConfig struct {
-	NatsURL     string `mapstructure:"nats_url"`
-	RedisAddr   string `mapstructure:"redis_address"`
-	ConsulsAddr string `mapstructure:"consuls_address"`
+	NATSURL    string `mapstructure:"nats_url"`
+	RedisAddr  string `mapstructure:"redis_address"`
+	ConsulAddr string `mapstructure:"consuls_address"`
 }
 
 func LoadConfig() (*AppConfig, error) {

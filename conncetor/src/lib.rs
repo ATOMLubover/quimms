@@ -3,8 +3,9 @@ use tracing_subscriber::EnvFilter;
 
 mod cache;
 mod config;
-mod consistent_hash;
+mod consist_hash;
 mod handler;
+mod http;
 mod message;
 mod model;
 mod registry;

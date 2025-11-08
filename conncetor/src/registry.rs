@@ -1,56 +1,216 @@
-use reqwest::{Client, StatusCode, Url};
+use std::{
+    fmt::Debug,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
-use crate::registry::upstream::ServiceInstance;
+use futures::future::join_all;
+use reqwest::{Client, Url};
+use tracing::warn;
 
-mod upstream;
+use crate::registry::{
+    model::{Registry, ServiceEntry},
+    store::{ConsistHashStore, ServiceData, Store},
+};
 
-pub use upstream::{HealthCheck, RegisterService};
+pub mod model;
+pub mod store;
 
-#[derive(Clone, Debug)]
-pub struct RegistryClient {
+pub struct ConsulClient<T, S = ConsistHashStore<T>>
+where
+    T: Clone + Debug + Send + 'static,
+    S: Store<Extra = T> + Debug + Send + 'static,
+{
     base_url: Url,
-    client: Client,
+    http_cli: Client,
+    service_prefix: String,
+    store: Arc<Mutex<S>>,
 }
 
-impl RegistryClient {
-    pub fn new() -> anyhow::Result<Self> {
-        let registry_url = std::env::var("CONSUL_ADDRESS")?;
+impl<T, S> ConsulClient<T, S>
+where
+    T: Clone + Debug + Send + 'static,
+    S: Store<Extra = T> + Debug + Send + 'static,
+{
+    const UPDATE_INTERVAL_SECS: u64 = 30;
 
-        let registry_url = Url::parse(&registry_url)?;
+    pub fn new(consul_addr: String, service_prefix: String, store: S) -> anyhow::Result<Self> {
+        let consul_addr = Url::parse(&consul_addr)?;
 
         Ok(Self {
-            base_url: registry_url,
-            client: Client::new(),
+            base_url: consul_addr,
+            http_cli: Client::new(),
+            service_prefix,
+            store: Arc::new(Mutex::new(store)),
         })
     }
 
-    pub async fn get_service_instances(
-        &self,
-        service_prefix: &str,
-    ) -> anyhow::Result<Vec<ServiceInstance>> {
-        let url = self
-            .base_url
-            .join(&format!("/v1/health/service/{}", service_prefix))?;
-
-        // Fetch only healthy instances.
-        let resp = self.client.get(url).query("passing").send().await?;
-
-        let instances: Vec<ServiceInstance> = resp.json().await?;
-
-        Ok(instances)
+    pub fn store(&self) -> &Arc<Mutex<S>> {
+        &self.store
     }
 
-    pub async fn register_service(&self, instance: &RegisterService) -> anyhow::Result<()> {
-        let url = self.base_url.join("/v1/agent/service/register")?;
+    pub async fn update_store<F, Fut>(&self, transformer: F) -> anyhow::Result<()>
+    where
+        F: Fn(&ServiceEntry) -> Fut,
+        Fut: Future<Output = T> + Send,
+    {
+        let client = self.http_cli.clone();
 
-        let response = self.client.put(url).json(instance).send().await?;
+        let url = self
+            .base_url
+            .join(&format!(
+                "/v1/health/service/{}?passing=true",
+                &self.service_prefix
+            ))
+            .map_err(|err| anyhow::anyhow!("Failed to construct URL: {}", err))?;
 
-        match response.status() {
-            StatusCode::OK => Ok(()),
-            status => Err(anyhow::anyhow!(
-                "Failed to register service: HTTP {}",
-                status
-            )),
-        }
+        let res = client.get(url).send().await?;
+
+        let services: Vec<ServiceEntry> = res.json().await?;
+
+        let datas = join_all(services.into_iter().map(|entry| {
+            let extra_data_fut = transformer(&entry);
+
+            async move {
+                let extra_data = extra_data_fut.await;
+
+                ServiceData::new(entry, extra_data)
+            }
+        }))
+        .await;
+
+        self.store.lock().unwrap().update(datas);
+
+        Ok(())
+    }
+
+    pub fn spawn_update_store<F, Fut>(&self, transformer: F) -> anyhow::Result<()>
+    where
+        F: Fn(&ServiceEntry) -> Fut + Send + 'static,
+        Fut: Future<Output = T> + Send,
+    {
+        let client = self.http_cli.clone();
+
+        let store = self.store.clone();
+
+        let url = self
+            .base_url
+            .join(&format!(
+                "/v1/health/service/{}?passing=true",
+                &self.service_prefix
+            ))
+            .map_err(|err| anyhow::anyhow!("Failed to construct URL: {}", err))?;
+
+        tokio::spawn(async move {
+            let mut interval =
+                tokio::time::interval(Duration::from_secs(Self::UPDATE_INTERVAL_SECS));
+
+            loop {
+                interval.tick().await;
+
+                let res = match client.get(url.clone()).send().await {
+                    Ok(res) => res,
+                    Err(err) => {
+                        warn!("Failed to fetch services from Consul: {}", err);
+                        continue;
+                    }
+                };
+
+                let services: Vec<ServiceEntry> = match res.json().await {
+                    Ok(services) => services,
+                    Err(err) => {
+                        warn!("Failed to parse services from Consul response: {}", err);
+                        continue;
+                    }
+                };
+
+                let datas = join_all(services.into_iter().map(|entry| {
+                    let extra_data_fut = transformer(&entry);
+
+                    async move {
+                        let extra_data = extra_data_fut.await;
+
+                        ServiceData::new(entry, extra_data)
+                    }
+                }))
+                .await;
+
+                store.lock().unwrap().update(datas);
+            }
+        });
+
+        Ok(())
+    }
+
+    pub async fn register(&self, service: Registry, ttl: Duration) -> anyhow::Result<()> {
+        let url = self
+            .base_url
+            .join("/v1/agent/service/register")
+            .map_err(|err| anyhow::anyhow!("Failed to construct URL: {}", err))?;
+
+        let _ = self
+            .http_cli
+            .put(url)
+            .json(&service)
+            .send()
+            .await?
+            .error_for_status()?;
+
+        self.spawn_refresh_ttl(service.check().check_id().to_string(), ttl)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn spawn_refresh_ttl(&self, check_id: String, ttl: Duration) -> anyhow::Result<()> {
+        let client = self.http_cli.clone();
+
+        let url = self
+            .base_url
+            .join(&format!("/v1/agent/check/update/{}", &check_id))
+            .map_err(|err| anyhow::anyhow!("Failed to construct URL: {}", err))?;
+
+        tokio::spawn(async move {
+            let mut ttl_timer = tokio::time::interval(ttl / 2);
+
+            loop {
+                ttl_timer.tick().await;
+
+                let body = serde_json::json!({
+                    "Status": "passing"
+                });
+
+                let res = match client.put(url.clone()).json(&body).send().await {
+                    Ok(res) => res,
+                    Err(err) => {
+                        warn!("Failed to send TTL update for check {}: {}", check_id, err);
+                        continue;
+                    }
+                };
+
+                if let Err(err) = res.error_for_status() {
+                    warn!(
+                        "Received error response for TTL update for check {}: {}",
+                        check_id, err
+                    );
+                }
+            }
+        });
+
+        Ok(())
+    }
+}
+
+impl<T, S> Debug for ConsulClient<T, S>
+where
+    T: Clone + Debug + Send + 'static,
+    S: Store<Extra = T> + Debug + Send + 'static,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConsulClient")
+            .field("base_url", &self.base_url)
+            .field("http_cli", &self.http_cli)
+            .field("store", &self.store)
+            .finish()
     }
 }

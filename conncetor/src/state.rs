@@ -1,54 +1,72 @@
-use std::ops::Deref;
 use std::sync::Arc;
 
 use crossfire::MAsyncTx;
 use dashmap::DashMap;
+use tonic::transport::Channel;
 
 use crate::cache::CacheClient;
 use crate::config::AppConfig;
 use crate::message::InnerMessage;
-use crate::registry::RegistryClient;
-use crate::upstream::UpstreamRouter;
+use crate::registry::ConsulClient;
 
 /// `AppState` is a cloneable wrapper around `AppStateInner` using `Arc`.
 #[derive(Clone, Debug)]
 pub(crate) struct AppState {
-    inner: Arc<AppStateInner>,
+    inner: Arc<Inner>,
 }
 
 impl AppState {
     pub fn new(
         config: AppConfig,
         cache: CacheClient,
-        registry: RegistryClient,
-        upstreams: UpstreamRouter,
+        user_service: ConsulClient<Channel>,
+        channel_service: ConsulClient<Channel>,
+        message_service: ConsulClient<Channel>,
     ) -> Self {
         Self {
-            inner: Arc::new(AppStateInner {
+            inner: Arc::new(Inner {
                 config,
                 cache,
-                registry,
-                upstreams,
+                user_service,
+                channel_service,
+                message_service,
                 online_users: DashMap::new(),
             }),
         }
     }
-}
 
-impl Deref for AppState {
-    type Target = AppStateInner;
+    pub fn config(&self) -> &AppConfig {
+        &self.inner.config
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.inner
+    pub fn cache(&self) -> &CacheClient {
+        &self.inner.cache
+    }
+
+    pub fn user_service(&self) -> &ConsulClient<Channel> {
+        &self.inner.user_service
+    }
+
+    pub fn channel_service(&self) -> &ConsulClient<Channel> {
+        &self.inner.channel_service
+    }
+
+    pub fn message_service(&self) -> &ConsulClient<Channel> {
+        &self.inner.message_service
+    }
+
+    pub fn online_users(&self) -> &DashMap<String, MAsyncTx<InnerMessage>> {
+        &self.inner.online_users
     }
 }
 
 /// `AppStateInner` has not to be Clone because `AppState` is the one being cloned.
 #[derive(Debug)]
-pub(crate) struct AppStateInner {
-    pub config: AppConfig,
-    pub cache: CacheClient,
-    pub registry: RegistryClient,
-    pub upstreams: UpstreamRouter,
-    pub online_users: DashMap<String, MAsyncTx<InnerMessage>>,
+struct Inner {
+    config: AppConfig,
+    cache: CacheClient,
+    user_service: ConsulClient<Channel>,
+    channel_service: ConsulClient<Channel>,
+    message_service: ConsulClient<Channel>,
+    online_users: DashMap<String, MAsyncTx<InnerMessage>>,
 }

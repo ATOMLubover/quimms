@@ -2,10 +2,12 @@ use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
-    pub service_id: String,
-    pub service_name: String,
-    pub server_host: String,
-    pub server_port: u16,
+    service_id: String,
+    service_name: String,
+    http_host: String,
+    http_port: u16,
+    grpc_host: String,
+    grpc_port: u16,
 }
 
 impl AppConfig {
@@ -17,5 +19,29 @@ impl AppConfig {
         let config: AppConfig = serde_json::from_str(&content)?;
 
         Ok(config)
+    }
+
+    pub fn service_id(&self) -> &str {
+        &self.service_id
+    }
+
+    pub fn service_name(&self) -> &str {
+        &self.service_name
+    }
+
+    pub fn http_host(&self) -> &str {
+        &self.http_host
+    }
+
+    pub fn http_port(&self) -> u16 {
+        self.http_port
+    }
+
+    pub fn grpc_host(&self) -> &str {
+        &self.grpc_host
+    }
+
+    pub fn grpc_port(&self) -> u16 {
+        self.grpc_port
     }
 }

@@ -1,12 +1,15 @@
-use axum::extract::ws::Message;
+use axum::extract::ws;
 
-use crate::message::InnerMessage;
+use crate::message::ServiceMessage;
 
-pub async fn handle_inner_message(inner_message: InnerMessage) -> anyhow::Result<Message> {
+/// Handle a service message and convert it to a WebSocket message.
+/// It may comes from gRPC server functions.
+pub async fn handle_serv_message(serv_message: ServiceMessage) -> anyhow::Result<Message> {
     unimplemented!()
 }
 
-pub async fn handle_websock_message(websock_message: Message) -> anyhow::Result<()> {
-    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+pub async fn handle_websock_message(websock_message: ws::Message) -> anyhow::Result<()> {
+    
+
     unimplemented!()
 }

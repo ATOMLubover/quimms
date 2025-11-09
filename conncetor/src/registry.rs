@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
     time::Duration,
 };
 
@@ -16,7 +16,7 @@ use crate::registry::{
 pub mod model;
 pub mod store;
 
-pub struct ConsulClient<T, S = ConsistHashStore<T>>
+pub struct ConsulRegistry<T, S = ConsistHashStore<T>>
 where
     T: Clone + Debug + Send + 'static,
     S: Store<Extra = T> + Debug + Send + 'static,
@@ -24,34 +24,34 @@ where
     base_url: Url,
     http_cli: Client,
     service_prefix: String,
-    store: Arc<Mutex<S>>,
+    store: Arc<RwLock<S>>,
 }
 
-impl<T, S> ConsulClient<T, S>
+impl<T, S> ConsulRegistry<T, S>
 where
     T: Clone + Debug + Send + 'static,
     S: Store<Extra = T> + Debug + Send + 'static,
 {
     const UPDATE_INTERVAL_SECS: u64 = 30;
 
-    pub fn new(consul_addr: String, service_prefix: String, store: S) -> anyhow::Result<Self> {
-        let consul_addr = Url::parse(&consul_addr)?;
+    pub fn new(consul_addr: &str, service_prefix: &str, store: S) -> anyhow::Result<Self> {
+        let consul_addr = Url::parse(consul_addr)?;
 
         Ok(Self {
             base_url: consul_addr,
             http_cli: Client::new(),
-            service_prefix,
-            store: Arc::new(Mutex::new(store)),
+            service_prefix: service_prefix.to_string(),
+            store: Arc::new(RwLock::new(store)),
         })
     }
 
-    pub fn store(&self) -> &Arc<Mutex<S>> {
+    pub fn store(&self) -> &Arc<RwLock<S>> {
         &self.store
     }
 
     pub async fn update_store<F, Fut>(&self, transformer: F) -> anyhow::Result<()>
     where
-        F: Fn(&ServiceEntry) -> Fut,
+        F: Fn(ServiceEntry) -> Fut,
         Fut: Future<Output = T> + Send,
     {
         let client = self.http_cli.clone();
@@ -69,7 +69,7 @@ where
         let services: Vec<ServiceEntry> = res.json().await?;
 
         let datas = join_all(services.into_iter().map(|entry| {
-            let extra_data_fut = transformer(&entry);
+            let extra_data_fut = transformer(entry.clone());
 
             async move {
                 let extra_data = extra_data_fut.await;
@@ -79,14 +79,14 @@ where
         }))
         .await;
 
-        self.store.lock().unwrap().update(datas);
+        self.store.write().unwrap().update(datas);
 
         Ok(())
     }
 
     pub fn spawn_update_store<F, Fut>(&self, transformer: F) -> anyhow::Result<()>
     where
-        F: Fn(&ServiceEntry) -> Fut + Send + 'static,
+        F: Fn(ServiceEntry) -> Fut + Send + 'static,
         Fut: Future<Output = T> + Send,
     {
         let client = self.http_cli.clone();
@@ -125,7 +125,7 @@ where
                 };
 
                 let datas = join_all(services.into_iter().map(|entry| {
-                    let extra_data_fut = transformer(&entry);
+                    let extra_data_fut = transformer(entry.clone());
 
                     async move {
                         let extra_data = extra_data_fut.await;
@@ -135,7 +135,7 @@ where
                 }))
                 .await;
 
-                store.lock().unwrap().update(datas);
+                store.write().unwrap().update(datas);
             }
         });
 
@@ -201,7 +201,7 @@ where
     }
 }
 
-impl<T, S> Debug for ConsulClient<T, S>
+impl<T, S> Debug for ConsulRegistry<T, S>
 where
     T: Clone + Debug + Send + 'static,
     S: Store<Extra = T> + Debug + Send + 'static,

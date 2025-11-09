@@ -11,4 +11,12 @@ fn main() {
         .unwrap_or_else(|err| panic!("Failed to compile protos: {}", err));
 
     println!("{}", format!("cargo:rerun-if-changed={}", USER_PROTO_FILE));
+    println!(
+        "{}",
+        format!("cargo:rerun-if-changed={}", MESSAGE_PROTO_FILE)
+    );
+    println!(
+        "{}",
+        format!("cargo:rerun-if-changed={}", CHANNEL_PROTO_FILE)
+    );
 }

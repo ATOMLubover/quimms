@@ -1,13 +1,14 @@
+use tonic::transport::Channel;
+
 use crate::{
     model::dto::{
-        CreateMessageRequest, CreateMessageResponse, ListMessagesRequest, ListMessagesResponse,
-        MessageDetail,
+        CreateMessageReq, CreateMessageRsp, ListMessagesReq, ListMessagesRsp, MessageDetail,
     },
+    registry::{ConsulRegistry, store::Store},
     service::{
         ServiceError, ServiceResult,
         message::message_service::message_service_client::MessageServiceClient, succeed,
     },
-    upstream::{Service, UpstreamRouter},
 };
 
 mod message_service {
@@ -15,44 +16,52 @@ mod message_service {
 }
 
 pub async fn create_message(
-    request: CreateMessageRequest,
-    upstreams: &UpstreamRouter,
-) -> ServiceResult<CreateMessageResponse> {
-    let server = upstreams
-        .pick_service(Service::MessageService, &request.sender_id)
-        .await
-        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?;
+    args: CreateMessageReq,
+    registry: &ConsulRegistry<Channel>,
+) -> ServiceResult<CreateMessageRsp> {
+    let chan = registry
+        .store()
+        .read()
+        .unwrap()
+        .pick(&args.user_id)
+        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?
+        .extra_data()
+        .clone();
 
-    let mut client = MessageServiceClient::new(server);
+    let mut client: MessageServiceClient<Channel> = MessageServiceClient::new(chan);
 
     let grpc_request = tonic::Request::new(message_service::CreateMessageRequest {
-        sender_id: request.sender_id,
-        channel_id: request.channel_id,
-        content: request.content,
+        user_id: args.user_id,
+        channel_id: args.channel_id,
+        content: args.content,
     });
 
     let grpc_response = client.create_message(grpc_request).await?.into_inner();
 
-    Ok(succeed().with_data(CreateMessageResponse {
+    Ok(succeed().with_data(CreateMessageRsp {
         message_id: grpc_response.message_id,
     }))
 }
 
 async fn list_channel_messages(
-    request: ListMessagesRequest,
-    upstreams: &UpstreamRouter,
-) -> ServiceResult<ListMessagesResponse> {
-    let server = upstreams
-        .pick_service(Service::MessageService, &request.channel_id)
-        .await
-        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?;
+    args: ListMessagesReq,
+    registry: &ConsulRegistry<Channel>,
+) -> ServiceResult<ListMessagesRsp> {
+    let chan = registry
+        .store()
+        .read()
+        .unwrap()
+        .pick(&args.channel_id)
+        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?
+        .extra_data()
+        .clone();
 
-    let mut client = MessageServiceClient::new(server);
+    let mut client = MessageServiceClient::new(chan);
 
     let grpc_request = tonic::Request::new(message_service::ListChannelMessagesRequest {
-        channel_id: request.channel_id,
-        limit: request.limit as i32,
-        latest_time: request.latest_time,
+        channel_id: args.channel_id,
+        limit: args.limit as i32,
+        latest_time: args.latest_time,
     });
 
     let grpc_response = client
@@ -72,5 +81,5 @@ async fn list_channel_messages(
         })
         .collect();
 
-    Ok(succeed().with_data(ListMessagesResponse { messages }))
+    Ok(succeed().with_data(ListMessagesRsp { messages }))
 }

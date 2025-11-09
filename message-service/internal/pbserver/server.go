@@ -97,7 +97,7 @@ func (s *serverImpl) CreateMessage(
 		s.state.MQCli,
 		dto.CreateMessageDTO{
 			ChannelID: req.GetChannelId(),
-			UserID:    req.GetSenderId(),
+			UserID:    req.GetUserId(),
 			Content:   req.GetContent(),
 		},
 	)

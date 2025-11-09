@@ -35,7 +35,7 @@ where
     }
 }
 
-pub trait Store: Send {
+pub trait Store: Send + Sync {
     type Extra: Clone + Debug + Send;
 
     fn pick(&self, key: &str) -> Option<ServiceData<Self::Extra>>;
@@ -47,7 +47,7 @@ pub trait Store: Send {
 #[derive(Debug)]
 pub struct ConsistHashStore<T>
 where
-    T: Clone + Debug,
+    T: Clone + Debug + Send + Sync,
 {
     ring: ConsistHashRing,
     replicas: usize,
@@ -58,7 +58,7 @@ where
 
 impl<T> ConsistHashStore<T>
 where
-    T: Clone + Debug,
+    T: Clone + Debug + Send + Sync,
 {
     pub fn new(replicas: usize, hasher: Hasher) -> Self {
         Self {
@@ -72,7 +72,7 @@ where
 
 impl<T> Store for ConsistHashStore<T>
 where
-    T: Clone + Debug + Send,
+    T: Clone + Debug + Send + Sync,
 {
     type Extra = T;
 

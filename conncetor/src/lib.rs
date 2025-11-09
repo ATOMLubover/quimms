@@ -4,15 +4,14 @@ use tracing_subscriber::EnvFilter;
 mod cache;
 mod config;
 mod consist_hash;
-mod handler;
 mod http;
 mod message;
 mod model;
 mod registry;
+mod rpc;
 mod service;
 mod state;
 mod transfer;
-mod upstream;
 
 use crate::config::AppConfig;
 
@@ -48,7 +47,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     let config = init_config().await?;
 
-    handler::run_server(&config).await?;
+    http::run_server(&config).await?;
 
     Ok(())
 }

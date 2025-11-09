@@ -11,7 +11,7 @@ service MessageService {
 
 message CreateMessageRequest {
     string content = 1;
-    string sender_id = 2;
+    string user_id = 2;
     string channel_id = 3;
 }
 

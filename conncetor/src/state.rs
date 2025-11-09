@@ -6,8 +6,8 @@ use tonic::transport::Channel;
 
 use crate::cache::CacheClient;
 use crate::config::AppConfig;
-use crate::message::InnerMessage;
-use crate::registry::ConsulClient;
+use crate::message::ServiceMessage;
+use crate::registry::ConsulRegistry;
 
 /// `AppState` is a cloneable wrapper around `AppStateInner` using `Arc`.
 #[derive(Clone, Debug)]
@@ -19,9 +19,9 @@ impl AppState {
     pub fn new(
         config: AppConfig,
         cache: CacheClient,
-        user_service: ConsulClient<Channel>,
-        channel_service: ConsulClient<Channel>,
-        message_service: ConsulClient<Channel>,
+        user_service: ConsulRegistry<Channel>,
+        channel_service: ConsulRegistry<Channel>,
+        message_service: ConsulRegistry<Channel>,
     ) -> Self {
         Self {
             inner: Arc::new(Inner {
@@ -43,19 +43,19 @@ impl AppState {
         &self.inner.cache
     }
 
-    pub fn user_service(&self) -> &ConsulClient<Channel> {
+    pub fn user_service(&self) -> &ConsulRegistry<Channel> {
         &self.inner.user_service
     }
 
-    pub fn channel_service(&self) -> &ConsulClient<Channel> {
+    pub fn channel_service(&self) -> &ConsulRegistry<Channel> {
         &self.inner.channel_service
     }
 
-    pub fn message_service(&self) -> &ConsulClient<Channel> {
+    pub fn message_service(&self) -> &ConsulRegistry<Channel> {
         &self.inner.message_service
     }
 
-    pub fn online_users(&self) -> &DashMap<String, MAsyncTx<InnerMessage>> {
+    pub fn online_users(&self) -> &DashMap<String, MAsyncTx<ServiceMessage>> {
         &self.inner.online_users
     }
 }
@@ -65,8 +65,8 @@ impl AppState {
 struct Inner {
     config: AppConfig,
     cache: CacheClient,
-    user_service: ConsulClient<Channel>,
-    channel_service: ConsulClient<Channel>,
-    message_service: ConsulClient<Channel>,
-    online_users: DashMap<String, MAsyncTx<InnerMessage>>,
+    user_service: ConsulRegistry<Channel>,
+    channel_service: ConsulRegistry<Channel>,
+    message_service: ConsulRegistry<Channel>,
+    online_users: DashMap<String, MAsyncTx<ServiceMessage>>,
 }

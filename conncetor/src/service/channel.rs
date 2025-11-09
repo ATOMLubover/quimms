@@ -4,76 +4,88 @@ mod channel_service {
 
 use crate::{
     model::dto::{
-        ChannelDetail, ChannelMember, CreateChannelRequest, CreateChannelResponse,
-        JoinChannelRequest, JoinChannelResponse, ListChannelDetailsRequest,
-        ListChannelDetailsResponse,
+        ChannelDetail, ChannelMember, CreateChannelReq, CreateChannelRsp, JoinChannelReq,
+        JoinChannelRsp, ListChannelDetailsReq, ListChannelDetailsRsp,
     },
+    registry::{ConsulRegistry, store::Store},
     service::{
         ServiceError, ServiceResult,
         channel::channel_service::channel_service_client::ChannelServiceClient, succeed,
     },
-    upstream::{Service, UpstreamRouter},
 };
+use tonic::transport::Channel;
 
 pub async fn create_channel(
-    request: CreateChannelRequest,
-    upstreams: &UpstreamRouter,
-) -> ServiceResult<CreateChannelResponse> {
-    let server = upstreams
-        .pick_service(Service::ChannelService, &request.creator_id)
-        .await
-        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?;
+    args: CreateChannelReq,
+    registry: &ConsulRegistry<Channel>,
+) -> ServiceResult<CreateChannelRsp> {
+    let chan = registry
+        .store()
+        .read()
+        .unwrap()
+        .pick(&args.creator_id)
+        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?
+        .extra_data()
+        .clone();
 
-    let mut client = ChannelServiceClient::new(server);
+    let mut client = ChannelServiceClient::new(chan);
 
     let grpc_request =
-        tonic::Request::new(channel_service::CreateChannelRequest { name: request.name });
+        tonic::Request::new(channel_service::CreateChannelRequest { name: args.name });
 
     let grpc_response = client.create_channel(grpc_request).await?.into_inner();
 
-    Ok(succeed().with_data(CreateChannelResponse {
+    Ok(succeed().with_data(CreateChannelRsp {
         channel_id: grpc_response.id,
         channel_name: grpc_response.name,
     }))
 }
 
 pub async fn join_channel(
-    request: JoinChannelRequest,
-    upstreams: &UpstreamRouter,
-) -> ServiceResult<JoinChannelResponse> {
-    let server = upstreams
-        .pick_service(Service::ChannelService, &request.user_id)
-        .await
-        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?;
+    args: JoinChannelReq,
+    registry: &ConsulRegistry<Channel>,
+) -> ServiceResult<JoinChannelRsp> {
+    let chan = registry
+        .store()
+        .read()
+        .unwrap()
+        .pick(&args.user_id)
+        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?
+        .extra_data()
+        .clone();
 
-    let mut client = ChannelServiceClient::new(server);
+    let mut client = ChannelServiceClient::new(chan);
 
     let grpc_request = tonic::Request::new(channel_service::JoinChannelRequest {
-        user_id: request.user_id,
-        channel_id: request.channel_id,
+        user_id: args.user_id,
+        channel_id: args.channel_id,
     });
 
     let grpc_response = client.join_channel(grpc_request).await?.into_inner();
 
-    Ok(succeed().with_data(JoinChannelResponse {
+    Ok(succeed().with_data(JoinChannelRsp {
         channel_id: grpc_response.channel_id,
         user_id: grpc_response.user_id,
     }))
 }
 
 pub async fn list_user_channels(
-    request: ListChannelDetailsRequest,
-    upstreams: &UpstreamRouter,
-) -> ServiceResult<ListChannelDetailsResponse> {
-    let server = upstreams
-        .pick_service(Service::ChannelService, &request.user_id)
-        .await
-        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?;
+    args: ListChannelDetailsReq,
+    registry: &ConsulRegistry<Channel>,
+) -> ServiceResult<ListChannelDetailsRsp> {
+    let chan = registry
+        .store()
+        .read()
+        .unwrap()
+        .pick(&args.user_id)
+        .ok_or_else(|| ServiceError::UpstreamUnaccesibleError)?
+        .extra_data()
+        .clone();
 
-    let mut client = ChannelServiceClient::new(server);
+    let mut client = ChannelServiceClient::new(chan);
 
     let grpc_request = tonic::Request::new(channel_service::ListChannelDetailRequest {
-        user_id: request.user_id,
+        user_id: args.user_id,
     });
 
     let grpc_response = client
@@ -98,5 +110,5 @@ pub async fn list_user_channels(
         })
         .collect();
 
-    Ok(succeed().with_data(ListChannelDetailsResponse { channels }))
+    Ok(succeed().with_data(ListChannelDetailsRsp { channels }))
 }

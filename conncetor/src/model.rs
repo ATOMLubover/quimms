@@ -94,7 +94,7 @@ pub mod dto {
         #[derive(Debug, Serialize, Deserialize)]
         pub struct CreateMessageReq {
             pub channel_id: String,
-            pub sender_id: String,
+            pub user_id: String,
             pub content: String,
         }
 

@@ -9,12 +9,12 @@ use tracing::error;
 
 use crate::{
     consist_hash::{ConsistHashRing, Hasher},
-    registry::ConsulClient,
+    registry::ConsulRegistry,
 };
 
 #[derive(Clone)]
 pub struct UpstreamRouter {
-    registry: ConsulClient,
+    registry: ConsulRegistry,
 
     user_svr_addr: Arc<RwLock<ConsistHashRing>>,
     user_srv_channels: DashMap<String, Channel>,
@@ -56,7 +56,7 @@ impl UpstreamRouter {
         default_hasher.finish()
     };
 
-    pub fn new(registry: ConsulClient, hasher: Option<Hasher>) -> Self {
+    pub fn new(registry: ConsulRegistry, hasher: Option<Hasher>) -> Self {
         let hasher = hasher.unwrap_or(Self::DEFAULT_HASHER);
 
         Self {

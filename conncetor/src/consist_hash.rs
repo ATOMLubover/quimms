@@ -89,3 +89,9 @@ impl ConsistHashRing {
         self.virt_map.len()
     }
 }
+
+// compile-time check: will fail with helpful compiler message showing which field/type is !Sync
+fn assert_sync<T: Sync>() {}
+fn assert_consist_hash_sync() {
+    assert_sync::<crate::consist_hash::ConsistHashRing>();
+}

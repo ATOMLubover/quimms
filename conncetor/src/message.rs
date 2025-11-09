@@ -1,2 +1,2 @@
 #[derive(Debug)]
-pub enum InnerMessage {}
+pub enum ServiceMessage {}

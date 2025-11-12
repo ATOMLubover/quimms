@@ -8,7 +8,11 @@ import (
 	"time"
 )
 
-func TransMsg(cli pb.DispatcherClient, msg *vo.ChanMsgVO) error {
+func TransMsg(
+	cli pb.DispatchServiceClient,
+	targetUserID string,
+	msg *vo.ChanMsgVO,
+) error {
 	const kTmo = 2 * time.Second
 
 	ctx, cancel := context.WithTimeout(context.Background(), kTmo)
@@ -18,11 +22,12 @@ func TransMsg(cli pb.DispatcherClient, msg *vo.ChanMsgVO) error {
 	_, err := cli.DispatchMessage(
 		ctx,
 		&pb.DispatchMessageRequest{
-			MessageId: msg.MsgID,
-			UserId:    msg.UserID,
-			ChannelId: msg.ChanID,
-			Content:   msg.Content,
-			CreatedAt: msg.CreatedAt,
+			TargetUserId: targetUserID,
+			MessageId:    msg.MsgID,
+			UserId:       msg.UserID,
+			ChannelId:    msg.ChanID,
+			Content:      msg.Content,
+			CreatedAt:    msg.CreatedAt,
 		},
 	)
 

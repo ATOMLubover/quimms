@@ -1,7 +1,19 @@
+use std::time::Duration;
+
 use anyhow::anyhow;
 use tonic::transport::Channel;
 
-use crate::registry::{ConsulRegistry, model::ServiceEntry, store::ConsistHashStore};
+mod dispatch;
+
+use crate::{
+    registry::{
+        ConsulRegistry,
+        model::{HeathCheck, Registry, ServiceEntry},
+        store::ConsistHashStore,
+    },
+    rpc::dispatch::{DispatchServer, dispatcher::dispatch_service_server::DispatchServiceServer},
+    state::AppState,
+};
 
 async fn transformer(entry: ServiceEntry) -> Channel {
     let addr = format!("http://{}", entry.info().address());
@@ -91,4 +103,62 @@ pub async fn init_message_service(consul_addr: &str) -> anyhow::Result<ConsulReg
     registry.spawn_update_store(transformer);
 
     Ok(registry)
+}
+
+pub async fn run_dispatch_server(state: &AppState) -> anyhow::Result<()> {
+    let dispatch_addr = format!(
+        "{}:{}",
+        state.config().grpc_host(),
+        state.config().grpc_port()
+    );
+
+    const DISPATCH_SERVICE_PREFIX: &str = "dispatch-service";
+
+    let registry = ConsulRegistry::new(
+        &format!(
+            "{}:{}",
+            state.config().consul_host(),
+            state.config().consul_port()
+        ),
+        DISPATCH_SERVICE_PREFIX,
+        ConsistHashStore::<()>::new(REPLICAS, DEFAULT_HASHER),
+    )
+    .map_err(|err| {
+        anyhow!(
+            "Error when initiating dispatch service registry client: {}",
+            err
+        )
+    })?;
+
+    const TTL_SECONDS: i32 = 60;
+
+    let ttl = Duration::from_secs(TTL_SECONDS as u64);
+
+    let check_id = format!(
+        "{}-{}",
+        DISPATCH_SERVICE_PREFIX,
+        state.config().service_id()
+    );
+
+    // A background task to refresh service registry is spwawned automatically.
+    registry
+        .register(
+            Registry::new(
+                state.config().service_id().to_string(),
+                DISPATCH_SERVICE_PREFIX.to_string(),
+                state.config().grpc_host().to_string(),
+                state.config().grpc_port(),
+                HeathCheck::new(ttl.clone(), check_id, DISPATCH_SERVICE_PREFIX.to_string()),
+            ),
+            ttl.clone(),
+        )
+        .await?;
+
+    let dispatch_server = DispatchServer::new(&state);
+
+    tonic::transport::Server::builder()
+        .add_service(DispatchServiceServer::new(dispatch_server))
+        .serve(dispatch_addr.parse()?)
+        .await
+        .map_err(|err| anyhow!("Error running dispatch gRPC server: {}", err))
 }

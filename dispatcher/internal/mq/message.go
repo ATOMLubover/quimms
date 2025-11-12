@@ -84,15 +84,16 @@ func handleNATSMsg(
 		return
 	}
 
-	for _, t := range tokens {
+	for i, t := range tokens {
 		tkn := t
+		target := memIDs[i]
 		conn := connSrv.GetStore(t)
 
 		// Rate limit message dispatching using goroutine pool.
 		exePool.Submit(func() {
-			cli := pb.NewDispatcherClient(conn)
+			cli := pb.NewDispatchServiceClient(conn)
 
-			if err := service.TransMsg(cli, msgVO); err != nil {
+			if err := service.TransMsg(cli, target, msgVO); err != nil {
 				slog.Error(
 					"failed to dispatch message to connector",
 					"connector_token", tkn,

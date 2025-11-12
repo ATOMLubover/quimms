@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -56,14 +58,14 @@ impl ServiceInfo {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct HeathCheck {
-    pub ttl: String,
+    pub ttl: Duration,
     #[serde(rename = "CheckID")]
     pub check_id: String,
     pub name: String,
 }
 
 impl HeathCheck {
-    pub fn new(ttl: String, check_id: String, name: String) -> Self {
+    pub fn new(ttl: Duration, check_id: String, name: String) -> Self {
         Self {
             ttl,
             check_id,
@@ -71,7 +73,7 @@ impl HeathCheck {
         }
     }
 
-    pub fn ttl(&self) -> &str {
+    pub fn ttl(&self) -> &Duration {
         &self.ttl
     }
 

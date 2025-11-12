@@ -4,10 +4,16 @@ use serde::Deserialize;
 pub struct AppConfig {
     service_id: String,
     service_name: String,
+
     http_host: String,
     http_port: u16,
+
     grpc_host: String,
     grpc_port: u16,
+    refresh_ttl_secs: u64,
+
+    consul_host: String,
+    consul_port: u16,
 }
 
 impl AppConfig {
@@ -43,5 +49,13 @@ impl AppConfig {
 
     pub fn grpc_port(&self) -> u16 {
         self.grpc_port
+    }
+
+    pub fn consul_host(&self) -> &str {
+        &self.consul_host
+    }
+
+    pub fn consul_port(&self) -> u16 {
+        self.consul_port
     }
 }

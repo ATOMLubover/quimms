@@ -43,7 +43,7 @@ pub async fn create_message(
     }))
 }
 
-async fn list_channel_messages(
+pub async fn list_channel_messages(
     args: ListMessagesReq,
     registry: &ConsulRegistry<Channel>,
 ) -> ServiceResult<ListMessagesRsp> {

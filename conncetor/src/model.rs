@@ -125,7 +125,21 @@ pub mod dto {
         }
     }
 
+    mod rpc {
+        use serde::{Deserialize, Serialize};
+
+        #[derive(Debug, Serialize, Deserialize)]
+        pub struct DispatchedMessage {
+            pub message_id: String,
+            pub channel_id: String,
+            pub user_id: String,
+            pub content: String,
+            pub timestamp: i64,
+        }
+    }
+
     pub use channel::*;
     pub use message::*;
+    pub use rpc::*;
     pub use user::*;
 }

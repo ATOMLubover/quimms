@@ -53,6 +53,8 @@ pub async fn run_server(state: &AppState) -> anyhow::Result<()> {
 
 mod websock {
 
+    use std::ops::ControlFlow;
+
     use axum::{
         Extension,
         body::Bytes,
@@ -64,47 +66,12 @@ mod websock {
     };
     use crossfire::mpsc;
     use futures::{SinkExt as _, StreamExt as _};
-    use serde::{Deserialize, Serialize};
-    use tracing::{debug, trace};
+    use tracing::{debug, error, trace};
 
     use crate::{
-        model::dto::{
-            CreateChannelReq, CreateChannelRsp, CreateMessageReq, CreateMessageRsp, GetUserInfoReq,
-            GetUserInfoRsp, JoinChannelReq, JoinChannelRsp, ListChannelDetailsReq,
-            ListChannelDetailsRsp, ListMessagesReq, ListMessagesRsp, LoginUserReq, LoginUserRsp,
-            RegisterUserReq, RegisterUserRsp,
-        },
-        service,
+        service::{handle_serv_message, handle_websock_message},
         state::AppState,
     };
-
-    #[derive(Debug, Serialize, Deserialize)]
-    #[serde(tag = "type", content = "data")]
-    #[serde(rename_all = "snake_case")]
-    pub enum ReqMessage {
-        RegisterUser(RegisterUserReq),
-        LoginUser(LoginUserReq),
-        GetUserInfo(GetUserInfoReq),
-        CreateChannel(CreateChannelReq),
-        ListChannelDetails(ListChannelDetailsReq),
-        JoinChannel(JoinChannelReq),
-        CreateMessage(CreateMessageReq),
-        ListMessages(ListMessagesReq),
-    }
-
-    #[derive(Debug, Serialize, Deserialize)]
-    #[serde(tag = "type", content = "data")]
-    #[serde(rename_all = "snake_case")]
-    pub enum RspMessage {
-        RegisterUser(RegisterUserRsp),
-        LoginUser(LoginUserRsp),
-        GetUserInfo(GetUserInfoRsp),
-        CreateChannel(CreateChannelRsp),
-        ListChannelDetails(ListChannelDetailsRsp),
-        JoinChannel(JoinChannelRsp),
-        CreateMessage(CreateMessageRsp),
-        ListMessages(ListMessagesRsp),
-    }
 
     pub async fn on_websock_connect(
         upgrade: WebSocketUpgrade,
@@ -136,7 +103,7 @@ mod websock {
             return;
         }
 
-        let (mut websock_tx, mut websock_rx) = socket.split();
+        let (mut websock_snd, mut websock_rcv) = socket.split();
 
         // NOTICE: Using bounded channel to prevent memory overflow in case of slow clients.
         // But it may drop messages if the client comsumes too slowly.
@@ -145,29 +112,21 @@ mod websock {
         app_state
             .online_users()
             .entry(user_id.clone())
-            .or_insert(serv_tx);
+            .or_insert(serv_tx.clone());
 
         let user_id_cloned = user_id.clone();
 
         let websock_send_task = tokio::spawn(async move {
             while let Ok(serv_message) = serv_rx.recv().await {
-                match service::handle_serv_message(serv_message).await {
-                    Ok(websock_message) => {
-                        if websock_tx.send(websock_message).await.is_err() {
-                            // If any error occurs, we assume the client has disconnected and break the loop.
-                            debug!(
-                                "WebSocket send error for user_id: {}, disconnecting",
-                                &user_id_cloned
-                            );
-
-                            break;
-                        }
-                    }
-                    Err(err) => {
-                        debug!(
-                            "Error handling inner message: {} for user_id {}",
-                            err, &user_id_cloned
+                if let Some(websock_message) = handle_serv_message(serv_message).await {
+                    if websock_snd.send(websock_message).await.is_err() {
+                        // If any error occurs, we assume the client has disconnected and break the loop.
+                        error!(
+                            "WebSocket send error for user_id: {}, disconnecting",
+                            &user_id_cloned
                         );
+
+                        break;
                     }
                 }
             }
@@ -179,22 +138,48 @@ mod websock {
         });
 
         let user_id_cloned = user_id.clone();
+        let user_serv_snd = serv_tx.clone();
 
         let websock_recv_task = tokio::spawn(async move {
-            while let Some(result) = websock_rx.next().await {
-                match result {
-                    Ok(msg) => {
+            while let Some(websock_result) = websock_rcv.next().await {
+                match websock_result {
+                    Ok(websock_message) => {
                         trace!(
                             "Received message from client {}: {:?}",
-                            &user_id_cloned, msg
+                            &user_id_cloned, &websock_message
                         );
-                        // Here you can handle messages received from the client if needed.
+
+                        match handle_websock_message(
+                            &user_id_cloned,
+                            &user_serv_snd,
+                            &app_state.user_registry(),
+                            &app_state.channel_registry(),
+                            &app_state.message_registry(),
+                            websock_message,
+                        )
+                        .await
+                        {
+                            ControlFlow::Continue(()) => {
+                                continue;
+                            }
+                            ControlFlow::Break(res) => {
+                                if let Err(err) = res {
+                                    error!(
+                                        "Error handling WebSocket message for user_id {}: {}",
+                                        &user_id_cloned, err
+                                    );
+                                }
+
+                                break;
+                            }
+                        }
                     }
                     Err(err) => {
-                        debug!(
+                        error!(
                             "WebSocket receive error for user_id {}: {}",
                             &user_id_cloned, err
                         );
+
                         break;
                     }
                 }

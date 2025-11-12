@@ -19,17 +19,17 @@ impl AppState {
     pub fn new(
         config: AppConfig,
         cache: CacheClient,
-        user_service: ConsulRegistry<Channel>,
-        channel_service: ConsulRegistry<Channel>,
-        message_service: ConsulRegistry<Channel>,
+        user_registry: ConsulRegistry<Channel>,
+        channel_registry: ConsulRegistry<Channel>,
+        message_registry: ConsulRegistry<Channel>,
     ) -> Self {
         Self {
             inner: Arc::new(Inner {
                 config,
                 cache,
-                user_service,
-                channel_service,
-                message_service,
+                user_registry: user_registry,
+                channel_registry,
+                message_registry,
                 online_users: DashMap::new(),
             }),
         }
@@ -43,16 +43,16 @@ impl AppState {
         &self.inner.cache
     }
 
-    pub fn user_service(&self) -> &ConsulRegistry<Channel> {
-        &self.inner.user_service
+    pub fn user_registry(&self) -> &ConsulRegistry<Channel> {
+        &self.inner.user_registry
     }
 
-    pub fn channel_service(&self) -> &ConsulRegistry<Channel> {
-        &self.inner.channel_service
+    pub fn channel_registry(&self) -> &ConsulRegistry<Channel> {
+        &self.inner.channel_registry
     }
 
-    pub fn message_service(&self) -> &ConsulRegistry<Channel> {
-        &self.inner.message_service
+    pub fn message_registry(&self) -> &ConsulRegistry<Channel> {
+        &self.inner.message_registry
     }
 
     pub fn online_users(&self) -> &DashMap<String, MAsyncTx<ServiceMessage>> {
@@ -65,8 +65,8 @@ impl AppState {
 struct Inner {
     config: AppConfig,
     cache: CacheClient,
-    user_service: ConsulRegistry<Channel>,
-    channel_service: ConsulRegistry<Channel>,
-    message_service: ConsulRegistry<Channel>,
+    user_registry: ConsulRegistry<Channel>,
+    channel_registry: ConsulRegistry<Channel>,
+    message_registry: ConsulRegistry<Channel>,
     online_users: DashMap<String, MAsyncTx<ServiceMessage>>,
 }

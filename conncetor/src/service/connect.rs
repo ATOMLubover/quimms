@@ -56,9 +56,7 @@ pub enum RspMessage {
 /// It may comes from gRPC server functions.
 pub async fn handle_serv_message(serv_message: ServiceMessage) -> Option<ws::Message> {
     let response: RspMessage = match serv_message {
-        ServiceMessage::Pong => {
-            return Some(ws::Message::Pong(Bytes::default()));
-        }
+        ServiceMessage::Pong => return Some(ws::Message::Pong(Bytes::default())),
         ServiceMessage::DispatchMessage(msg) => RspMessage::DispatchMessage(msg),
         ServiceMessage::RegisterUserRsp(rsp) => RspMessage::RegisterUser(rsp),
         ServiceMessage::LoginUserRsp(rsp) => RspMessage::LoginUser(rsp),

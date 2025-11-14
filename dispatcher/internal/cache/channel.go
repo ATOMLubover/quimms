@@ -16,10 +16,10 @@ func ListUsrConnTokens(rdb *redis.Client, userIDs []string) ([]string, error) {
 
 	defer cancel()
 
-	connAddrs, err := rdb.
+	connTokens, err := rdb.
 		HMGet(
 			ctx,
-			"user:connectors",
+			"user:connector",
 			userIDs...,
 		).
 		Result()
@@ -28,10 +28,10 @@ func ListUsrConnTokens(rdb *redis.Client, userIDs []string) ([]string, error) {
 		return nil, fmt.Errorf("failed to get user connector addresses from Redis: %v", err)
 	}
 
-	tokens := make([]string, 0, len(connAddrs))
+	tokens := make([]string, 0, len(connTokens))
 
-	for i, addr := range connAddrs {
-		if addr == nil {
+	for i, tkn := range connTokens {
+		if tkn == nil {
 			slog.Warn(
 				"User is offline or has no connector address",
 				"user_id", userIDs[i],
@@ -40,7 +40,7 @@ func ListUsrConnTokens(rdb *redis.Client, userIDs []string) ([]string, error) {
 			continue
 		}
 
-		addr, ok := addr.(string)
+		addr, ok := tkn.(string)
 
 		if !ok || addr == "" {
 			slog.Warn(

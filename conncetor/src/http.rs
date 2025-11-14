@@ -1,10 +1,10 @@
 use std::net::SocketAddrV4;
 
-use axum::{Router, routing};
+use axum::{Router, http::StatusCode, response::IntoResponse, routing};
 use tokio::net::TcpListener;
 use tracing::debug;
 
-use crate::state::AppState;
+use crate::{service, state::AppState};
 
 async fn bind_addr(host: &str, port: u16) -> anyhow::Result<TcpListener> {
     let addr: SocketAddrV4 = format!("{}:{}", host, port)
@@ -32,7 +32,8 @@ async fn signal_term() {
 
 async fn new_router(state: &AppState) -> anyhow::Result<Router> {
     let router: Router = Router::new()
-        .route("/check", routing::get(|| async { "OK" }))
+        .route("/ws/:user_id", routing::get(websock::on_websock_connect))
+        .route("/check", routing::get(health_check))
         .with_state(state.clone());
 
     Ok(router)
@@ -51,8 +52,15 @@ pub async fn run_server(state: &AppState) -> anyhow::Result<()> {
     Ok(())
 }
 
-mod websock {
+// TODO: move it to an independent health module.
+async fn health_check() -> impl IntoResponse {
+    match service::health_check().await {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
 
+mod websock {
     use std::ops::ControlFlow;
 
     use axum::{
@@ -69,6 +77,7 @@ mod websock {
     use tracing::{debug, error, trace};
 
     use crate::{
+        cache::CacheClient,
         service::{handle_serv_message, handle_websock_message},
         state::AppState,
     };
@@ -102,6 +111,29 @@ mod websock {
             );
             return;
         }
+
+        // Register user as online in cache.
+        // If we fail to register, we refuse to establish the connection.
+        match register_user_online(
+            app_state.cache(),
+            &user_id,
+            app_state.config().service_name(),
+            app_state.config().service_id(),
+        )
+        .await
+        {
+            Ok(_) => {
+                debug!("User {} registered as online successfully", user_id);
+            }
+            Err(err) => {
+                error!(
+                    "Error registering user {} as online: {}, closing connection",
+                    user_id, err
+                );
+
+                return;
+            }
+        };
 
         let (mut websock_snd, mut websock_rcv) = socket.split();
 
@@ -140,6 +172,8 @@ mod websock {
         let user_id_cloned = user_id.clone();
         let user_serv_snd = serv_tx.clone();
 
+        let app_state_clone = app_state.clone();
+
         let websock_recv_task = tokio::spawn(async move {
             while let Some(websock_result) = websock_rcv.next().await {
                 match websock_result {
@@ -152,9 +186,9 @@ mod websock {
                         match handle_websock_message(
                             &user_id_cloned,
                             &user_serv_snd,
-                            &app_state.user_registry(),
-                            &app_state.channel_registry(),
-                            &app_state.message_registry(),
+                            &app_state_clone.user_registry(),
+                            &app_state_clone.channel_registry(),
+                            &app_state_clone.message_registry(),
                             websock_message,
                         )
                         .await
@@ -201,6 +235,24 @@ mod websock {
             }
         }
 
+        // Clean up the online user entry.
+        app_state.online_users().remove(&user_id);
+
+        match deregister_user_online(app_state.cache(), &user_id).await {
+            Ok(_) => {
+                debug!(
+                    "User {} deregistered successfully upon WebSocket disconnection",
+                    user_id
+                );
+            }
+            Err(err) => {
+                error!(
+                    "Error deregistering user {} upon WebSocket disconnection: {}",
+                    user_id, err
+                );
+            }
+        }
+
         debug!("WebSocket connection exiting for user_id: {}", user_id);
     }
 
@@ -226,5 +278,60 @@ mod websock {
         };
 
         Ok(())
+    }
+
+    async fn register_user_online(
+        cache: &CacheClient,
+        user_id: &str,
+        service_name: &str,
+        service_id: &str,
+    ) -> anyhow::Result<()> {
+        let server_token = format!("{}:{}", service_name, service_id);
+
+        const HASH_KEY: &str = "user:connector";
+
+        let result = cache
+            .hash_set(HASH_KEY, user_id, &server_token)
+            .await
+            .map_err(|err| {
+                anyhow::anyhow!("Error registering user {} with cache: {}", user_id, err)
+            })?;
+
+        match result {
+            true => {
+                debug!(
+                    "User {} registered in cache with service token {}",
+                    user_id, server_token
+                );
+
+                Ok(())
+            }
+            false => {
+                debug!("User {} already registered in cache, skipping", user_id);
+
+                anyhow::bail!("User {} already registered in cache", user_id);
+            }
+        }
+    }
+
+    async fn deregister_user_online(cache: &CacheClient, user_id: &str) -> anyhow::Result<()> {
+        const HASH_KEY: &str = "user:connector";
+
+        let result = cache.hash_delete(HASH_KEY, user_id).await.map_err(|err| {
+            anyhow::anyhow!("Error deregistering user {} from cache: {}", user_id, err)
+        })?;
+
+        match result {
+            true => {
+                debug!("User {} deregistered from cache", user_id);
+
+                Ok(())
+            }
+            false => {
+                debug!("User {} not found in cache during deregistration", user_id);
+
+                anyhow::bail!("User {} not found in cache during deregistration", user_id);
+            }
+        }
     }
 }

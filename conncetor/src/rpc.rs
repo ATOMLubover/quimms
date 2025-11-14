@@ -50,7 +50,12 @@ pub async fn init_user_service(consul_addr: &str) -> anyhow::Result<ConsulRegist
         .await
         .map_err(|err| anyhow!("Error when updating user service registry store: {}", err))?;
 
-    registry.spawn_update_store(transformer);
+    registry.spawn_update_store(transformer).map_err(|err| {
+        anyhow!(
+            "Error when spawning update store task for user service registry: {}",
+            err
+        )
+    })?;
 
     Ok(registry)
 }
@@ -75,7 +80,12 @@ pub async fn init_channel_service(consul_addr: &str) -> anyhow::Result<ConsulReg
         )
     })?;
 
-    registry.spawn_update_store(transformer);
+    registry.spawn_update_store(transformer).map_err(|err| {
+        anyhow!(
+            "Error when spawning update store task for channel service registry: {}",
+            err
+        )
+    })?;
 
     Ok(registry)
 }
@@ -100,7 +110,12 @@ pub async fn init_message_service(consul_addr: &str) -> anyhow::Result<ConsulReg
         )
     })?;
 
-    registry.spawn_update_store(transformer);
+    registry.spawn_update_store(transformer).map_err(|err| {
+        anyhow!(
+            "Error when spawning update store task for message service registry: {}",
+            err
+        )
+    })?;
 
     Ok(registry)
 }
@@ -112,15 +127,13 @@ pub async fn run_dispatch_server(state: &AppState) -> anyhow::Result<()> {
         state.config().grpc_port()
     );
 
-    const DISPATCH_SERVICE_PREFIX: &str = "dispatch-service";
-
     let registry = ConsulRegistry::new(
         &format!(
             "{}:{}",
             state.config().consul_host(),
             state.config().consul_port()
         ),
-        DISPATCH_SERVICE_PREFIX,
+        state.config().service_name(),
         ConsistHashStore::<()>::new(REPLICAS, DEFAULT_HASHER),
     )
     .map_err(|err| {
@@ -130,13 +143,11 @@ pub async fn run_dispatch_server(state: &AppState) -> anyhow::Result<()> {
         )
     })?;
 
-    const TTL_SECONDS: i32 = 60;
-
-    let ttl = Duration::from_secs(TTL_SECONDS as u64);
+    let ttl = Duration::from_secs(state.config().refresh_ttl_secs() as u64);
 
     let check_id = format!(
         "{}-{}",
-        DISPATCH_SERVICE_PREFIX,
+        state.config().service_name(),
         state.config().service_id()
     );
 
@@ -145,10 +156,14 @@ pub async fn run_dispatch_server(state: &AppState) -> anyhow::Result<()> {
         .register(
             Registry::new(
                 state.config().service_id().to_string(),
-                DISPATCH_SERVICE_PREFIX.to_string(),
+                state.config().service_name().to_string(),
                 state.config().grpc_host().to_string(),
                 state.config().grpc_port(),
-                HeathCheck::new(ttl.clone(), check_id, DISPATCH_SERVICE_PREFIX.to_string()),
+                HeathCheck::new(
+                    ttl.clone(),
+                    check_id,
+                    state.config().service_name().to_string(),
+                ),
             ),
             ttl.clone(),
         )

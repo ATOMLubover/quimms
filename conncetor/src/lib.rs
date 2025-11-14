@@ -15,10 +15,7 @@ mod service;
 mod state;
 mod transfer;
 
-use crate::{
-    cache::CacheClient, config::AppConfig, registry::ConsulRegistry, rpc::run_dispatch_server,
-    state::AppState,
-};
+use crate::{cache::CacheClient, config::AppConfig, registry::ConsulRegistry, state::AppState};
 
 async fn init_env() -> anyhow::Result<()> {
     dotenvy::dotenv().map_err(|err| anyhow::anyhow!("Error when loading env: {}", err))?;

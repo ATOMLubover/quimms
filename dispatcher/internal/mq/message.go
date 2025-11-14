@@ -87,7 +87,7 @@ func handleNATSMsg(
 	for i, t := range tokens {
 		tkn := t
 		target := memIDs[i]
-		conn := connSrv.GetStore(t)
+		conn := connSrv.GetStore(tkn)
 
 		// Rate limit message dispatching using goroutine pool.
 		exePool.Submit(func() {

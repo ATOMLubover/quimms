@@ -51,6 +51,10 @@ impl AppConfig {
         self.grpc_port
     }
 
+    pub fn refresh_ttl_secs(&self) -> u64 {
+        self.refresh_ttl_secs
+    }
+
     pub fn consul_host(&self) -> &str {
         &self.consul_host
     }

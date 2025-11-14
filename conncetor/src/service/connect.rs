@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::ops::ControlFlow;
 
 use anyhow::anyhow;
@@ -18,7 +17,6 @@ use crate::model::dto::{
     RegisterUserReq, RegisterUserRsp,
 };
 use crate::registry::ConsulRegistry;
-use crate::service::{self, ServiceValue};
 use crate::service::user::{register_user, login_user, get_user_info};
 use crate::service::channel::{create_channel, join_channel, list_user_channels};
 use crate::service::message::{create_message, list_channel_messages};

@@ -33,6 +33,7 @@ where
     pub data: Option<T>,
 }
 
+#[allow(dead_code)]
 impl<T> ServiceValue<T>
 where
     T: Serialize,

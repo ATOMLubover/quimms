@@ -13,7 +13,6 @@ mod registry;
 mod rpc;
 mod service;
 mod state;
-mod transfer;
 
 use crate::{cache::CacheClient, config::AppConfig, registry::ConsulRegistry, state::AppState};
 

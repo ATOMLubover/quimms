@@ -10,17 +10,16 @@ impl CacheClient {
     pub async fn new() -> anyhow::Result<Self> {
         let redis_url = std::env::var("REDIS_URL")?;
 
-        let client = Client::open(redis_url.as_str())?;
+        let client = Client::open(redis_url.as_str())
+            .map_err(|err| anyhow!("Error when creating Redis client: {}", err))?;
 
-        client
-            .get_multiplexed_async_connection()
-            .await
-            .map_err(|err| anyhow!("Error when connecting to Redis server: {}", err))?
-            .ping()
+        let this = Self { remote: client };
+
+        this.ping_remote()
             .await
             .map_err(|err| anyhow!("Error when pinging Redis server: {}", err))?;
 
-        Ok(Self { remote: client })
+        Ok(this)
     }
 
     pub async fn ping_remote(&self) -> RedisResult<()> {

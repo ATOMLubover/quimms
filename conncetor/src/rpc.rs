@@ -1,7 +1,9 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::anyhow;
+use tokio::sync::Notify;
 use tonic::transport::Channel;
+use tracing::debug;
 
 mod dispatch;
 
@@ -33,7 +35,7 @@ const DEFAULT_HASHER: fn(&str) -> u64 = |key: &str| {
     default_hasher.finish()
 };
 
-const USER_SERVICE_PREFIX: &str = "user-service";
+const USER_SERVICE_PREFIX: &str = "UserService";
 
 pub async fn init_user_service(consul_addr: &str) -> anyhow::Result<ConsulRegistry<Channel>> {
     let store = ConsistHashStore::new(REPLICAS, DEFAULT_HASHER);
@@ -60,7 +62,7 @@ pub async fn init_user_service(consul_addr: &str) -> anyhow::Result<ConsulRegist
     Ok(registry)
 }
 
-const CHANNEL_SERVICE_PREFIX: &str = "channel-service";
+const CHANNEL_SERVICE_PREFIX: &str = "ChannelService";
 
 pub async fn init_channel_service(consul_addr: &str) -> anyhow::Result<ConsulRegistry<Channel>> {
     let store = ConsistHashStore::new(REPLICAS, DEFAULT_HASHER);
@@ -90,7 +92,7 @@ pub async fn init_channel_service(consul_addr: &str) -> anyhow::Result<ConsulReg
     Ok(registry)
 }
 
-const MESSAGE_SERVICE_PREFIX: &str = "message-service";
+const MESSAGE_SERVICE_PREFIX: &str = "MessageService";
 
 pub async fn init_message_service(consul_addr: &str) -> anyhow::Result<ConsulRegistry<Channel>> {
     let store = ConsistHashStore::new(REPLICAS, DEFAULT_HASHER);
@@ -120,7 +122,7 @@ pub async fn init_message_service(consul_addr: &str) -> anyhow::Result<ConsulReg
     Ok(registry)
 }
 
-pub async fn run_dispatch_server(state: &AppState) -> anyhow::Result<()> {
+pub async fn run_dispatch_server(state: &AppState, shutdown: Arc<Notify>) -> anyhow::Result<()> {
     let dispatch_addr = format!(
         "{}:{}",
         state.config().grpc_host(),
@@ -129,7 +131,7 @@ pub async fn run_dispatch_server(state: &AppState) -> anyhow::Result<()> {
 
     let registry = ConsulRegistry::new(
         &format!(
-            "{}:{}",
+            "http://{}:{}",
             state.config().consul_host(),
             state.config().consul_port()
         ),
@@ -171,9 +173,15 @@ pub async fn run_dispatch_server(state: &AppState) -> anyhow::Result<()> {
 
     let dispatch_server = DispatchServer::new(&state);
 
+    let shutdown_signal = shutdown.clone();
+
     tonic::transport::Server::builder()
         .add_service(DispatchServiceServer::new(dispatch_server))
-        .serve(dispatch_addr.parse()?)
+        .serve_with_shutdown(dispatch_addr.parse()?, async move {
+            debug!("gRPC server awaiting shutdown signal");
+            shutdown_signal.notified().await;
+            debug!("gRPC server received shutdown signal");
+        })
         .await
         .map_err(|err| anyhow!("Error running dispatch gRPC server: {}", err))
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"strconv"
 
 	"user-service/internal/config"
 	"user-service/internal/model/dto"
@@ -31,7 +30,9 @@ func newServer(cfg *config.AppConfig) (pb.UserServiceServer, error) {
 		return nil, err
 	}
 
-	serviceIDNum, err := strconv.Atoi(cfg.ServiceID)
+	var serviceIDNum int
+
+	_, err = fmt.Sscanf(cfg.ServiceID, "UserService-%d", &serviceIDNum)
 
 	if err != nil {
 		return nil, err
@@ -47,6 +48,7 @@ func newServer(cfg *config.AppConfig) (pb.UserServiceServer, error) {
 		cfg.ConsulsAddr,
 		cfg.ServiceID, cfg.ServiceName,
 		cfg.Host, int(cfg.Port),
+		int(cfg.HealthTTLSeconds), int(cfg.HealthRefreshSeconds),
 	)
 
 	return &serverImpl{

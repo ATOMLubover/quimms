@@ -14,7 +14,6 @@ import (
 	"message-service/internal/state"
 	"message-service/pb"
 	"net"
-	"strconv"
 
 	"github.com/bwmarrin/snowflake"
 	"google.golang.org/grpc"
@@ -34,7 +33,9 @@ func newServer(cfg *config.AppConfig) (pb.MessageServiceServer, error) {
 
 	slog.Info("Database connected successfully")
 
-	serviceIDNum, err := strconv.Atoi(cfg.ServiceID)
+	var serviceIDNum int
+
+	_, err = fmt.Sscanf(cfg.ServiceID, "MessageService-%d", &serviceIDNum)
 
 	if err != nil {
 		return nil, err
@@ -66,6 +67,7 @@ func newServer(cfg *config.AppConfig) (pb.MessageServiceServer, error) {
 		cfg.ConsulsAddr,
 		cfg.ServiceID, cfg.ServiceName,
 		cfg.Host, int(cfg.Port),
+		int(cfg.HealthTTLSeconds), int(cfg.HealthRefreshSeconds),
 	)
 
 	if err != nil {

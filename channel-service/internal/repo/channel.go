@@ -2,14 +2,16 @@ package repo
 
 import (
 	"channel-service/internal/model/po"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 func CreateChannel(db *gorm.DB, name string, newID string) error {
 	newChannel := po.ChannelPO{
-		ID:   newID,
-		Name: name,
+		ID:        newID,
+		Name:      name,
+		CreatedAt: time.Now(),
 	}
 
 	return db.Create(&newChannel).Error

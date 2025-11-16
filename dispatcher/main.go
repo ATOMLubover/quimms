@@ -6,6 +6,7 @@ import (
 	"dispatcher/internal/mq"
 	"dispatcher/internal/registry"
 	"dispatcher/internal/state"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -19,9 +20,14 @@ import (
 	"github.com/panjf2000/ants"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
+	// Set global slog logger to Debug level
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	slog.SetDefault(logger)
+
 	if err := initEnv(); err != nil {
 		slog.Error("failed to initialize environment", "error", err.Error())
 		return
@@ -134,8 +140,16 @@ func initNATS(cfg *config.AppConfig) (*nats.Conn, error) {
 }
 
 func initRedis(cfg *config.AppConfig) (*redis.Client, error) {
+	redisPwd := os.Getenv("REDIS_PASSWORD")
+
+	if redisPwd == "" {
+		return nil, errors.New("REDIS_PASSWORD environment variable is not set")
+	}
+
 	rdb := redis.NewClient(&redis.Options{
-		Addr: cfg.RedisAddr,
+		Addr:     cfg.RedisAddr,
+		Password: redisPwd,
+		DB:       0,
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -156,7 +170,7 @@ func initRegistry(cfg *config.AppConfig) (*registry.ConsulClient[*grpc.ClientCon
 func initChanSrv(reg *registry.ConsulClient[*grpc.ClientConn]) (*state.ChanSrvBalancer, error) {
 	return balancer.NewBalancer(
 		reg,
-		"channel-service",
+		"ChannelService",
 		30,
 	)
 }
@@ -200,7 +214,10 @@ func waitExitSig() {
 func transFunc(inst *registry.ConsulSrvInst) (*grpc.ClientConn, error) {
 	target := fmt.Sprintf("%s:%d", inst.Address, inst.Port)
 
-	conn, err := grpc.NewClient(target)
+	conn, err := grpc.NewClient(
+		target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to gRPC server %s: %v", target, err)
@@ -229,7 +246,7 @@ func newConnSrv(consulAddr string, stopCh <-chan struct{}) (*registry.ConsulClie
 	go func() {
 		defer tck.Stop()
 
-		const kConnSrvPref = "connector"
+		const kConnSrvPref = "ConnectorService"
 
 		for {
 			select {

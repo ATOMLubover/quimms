@@ -47,9 +47,25 @@ type ConsulSrvInst struct {
 	Port        uint16 `json:"Port"`
 }
 
+type consulNode struct {
+	Address string `json:"Address"`
+}
+
+type consulService struct {
+	ID      string `json:"ID"`
+	Service string `json:"Service"`
+	Address string `json:"Address"`
+	Port    int    `json:"Port"`
+}
+
+type consulHealthEntry struct {
+	Node    consulNode    `json:"Node"`
+	Service consulService `json:"Service"`
+}
+
 // Implement Registry interface.
 func (c *ConsulClient[T]) PullInst(srvPref string) ([]balancer.SrvInst[T], error) {
-	url := fmt.Sprintf("%s/v1/health/services/%s", c.regURL, srvPref)
+	url := fmt.Sprintf("http://%s/v1/health/service/%s", c.regURL, srvPref)
 
 	rsp, err := c.httpCli.Get(url)
 
@@ -61,7 +77,8 @@ func (c *ConsulClient[T]) PullInst(srvPref string) ([]balancer.SrvInst[T], error
 
 	if rsp.StatusCode != 200 {
 		return nil, fmt.Errorf(
-			"failed to discover connector service, status code: %d",
+			"failed to discover connector service, url: %s, status code: %d",
+			url,
 			rsp.StatusCode,
 		)
 	}
@@ -72,11 +89,28 @@ func (c *ConsulClient[T]) PullInst(srvPref string) ([]balancer.SrvInst[T], error
 		return nil, err
 	}
 
-	var instLst []ConsulSrvInst
+	var raw []consulHealthEntry
 
-	if err := json.Unmarshal(body, &instLst); err != nil {
+	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, err
 	}
+
+	var instLst []ConsulSrvInst
+	for _, e := range raw {
+		addr := e.Service.Address
+		if addr == "" {
+			addr = e.Node.Address
+		}
+
+		instLst = append(instLst, ConsulSrvInst{
+			ServiceID:   e.Service.ID,
+			ServiceName: e.Service.Service,
+			Address:     addr,
+			Port:        uint16(e.Service.Port),
+		})
+	}
+
+	slog.Debug("Fetched connector service instances from Consul", "instances", instLst)
 
 	resLst := make([]balancer.SrvInst[T], 0, len(instLst))
 	newMap := make(map[string]T)
@@ -106,6 +140,12 @@ func (c *ConsulClient[T]) PullInst(srvPref string) ([]balancer.SrvInst[T], error
 			Store:   store,
 		})
 	}
+
+	slog.Debug(
+		"Successfully pulled connector service instances from Consul",
+		"count", len(resLst),
+		"services", newMap,
+	)
 
 	c.mu.Lock()
 

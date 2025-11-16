@@ -6,7 +6,7 @@ use std::{
 
 use futures::future::join_all;
 use reqwest::{Client, Url};
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::registry::{
     model::{Registry, ServiceEntry},
@@ -32,7 +32,7 @@ where
     T: Clone + Debug + Send + 'static,
     S: Store<Extra = T> + Debug + Send + 'static,
 {
-    const UPDATE_INTERVAL_SECS: u64 = 30;
+    const UPDATE_INTERVAL_SECS: u64 = 10;
 
     pub fn new(consul_addr: &str, service_prefix: &str, store: S) -> anyhow::Result<Self> {
         let consul_addr = Url::parse(consul_addr)?;
@@ -108,6 +108,8 @@ where
             loop {
                 interval.tick().await;
 
+                debug!("Updating service registry store from Consul: {}", url);
+
                 let res = match client.get(url.clone()).send().await {
                     Ok(res) => res,
                     Err(err) => {
@@ -134,6 +136,12 @@ where
                     }
                 }))
                 .await;
+
+                debug!(
+                    "Fetched {} services from Consul: {:#?}",
+                    datas.len(),
+                    &datas
+                );
 
                 store.write().unwrap().update(datas);
             }

@@ -1,5 +1,7 @@
 package po
 
+import "time"
+
 type NewUserPO struct {
 	ID           string `gorm:"primaryKey;column:f_id"`
 	Nickname     string `gorm:"column:f_nickname"`
@@ -20,9 +22,9 @@ func (UserCertPO) TableName() string {
 }
 
 type UserInfoPO struct {
-	ID        string `gorm:"primaryKey;column:f_id"`
-	Nickname  string `gorm:"column:f_nickname"`
-	CreatedAt int64  `gorm:"column:f_created_at"`
+	ID        string    `gorm:"primaryKey;column:f_id"`
+	Nickname  string    `gorm:"column:f_nickname"`
+	CreatedAt time.Time `gorm:"column:f_created_at"`
 }
 
 func (UserInfoPO) TableName() string {

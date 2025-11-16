@@ -1,9 +1,10 @@
 {
-    "service_id": "1",
-    "service_name": "message-service",
-    "host": "127.0.0.1",
-    "port": 8010,
-    "mq_url": "nats://localhost:4222",
-    "redis_url": "localhost:6379",
-    "consuls_addr": "http://localhost:8500"
+  "service_id": "MessageService-1",
+  "service_name": "MessageService",
+  "host": "127.0.0.1",
+  "port": 7090,
+  "mq_url": "nats://127.0.0.1:4222",
+  "consuls_addr": "http://127.0.0.1:8500",
+  "health_ttl_seconds": 10,
+  "health_refresh_seconds": 5
 }

@@ -1,5 +1,7 @@
 {
   "mq_url": "nats://localhost:4222",
-  "redis_address": "localhost:6379",
-  "consul_address": "localhost:8500"
+  "redis_address": "8.141.92.242:6379",
+  "consul_address": "127.0.0.1:8500",
+  "service_id": "DispatcherService-1",
+  "service_name": "DispatcherService"
 }

@@ -47,7 +47,7 @@ func GetUserInfo(db *gorm.DB, id string) (*vo.UserInfoVO, error) {
 	userVO := &vo.UserInfoVO{
 		ID:        userPO.ID,
 		Nickname:  userPO.Nickname,
-		CreatedAt: userPO.CreatedAt,
+		CreatedAt: userPO.CreatedAt.Unix(),
 	}
 
 	return userVO, nil

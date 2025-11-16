@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use anyhow::anyhow;
+use tokio::sync::Notify;
 use tonic::transport::Channel;
 use tracing::debug;
 use tracing_subscriber::EnvFilter;
@@ -48,7 +51,7 @@ async fn init_grpc_clients(
     ConsulRegistry<Channel>,
     ConsulRegistry<Channel>,
 )> {
-    let consul_addr = format!("{}:{}", config.consul_host(), config.consul_port());
+    let consul_addr = format!("http://{}:{}", config.consul_host(), config.consul_port());
 
     let user_resgitry = rpc::init_user_service(&consul_addr)
         .await
@@ -95,18 +98,18 @@ fn init_app_state(
     state
 }
 
-async fn run_http_server(state: &AppState) -> anyhow::Result<()> {
+async fn run_http_server(state: &AppState, shutdown: Arc<Notify>) -> anyhow::Result<()> {
     debug!("HTTP server running");
 
-    http::run_server(state).await?;
+    http::run_server(state, shutdown).await?;
 
     Ok(())
 }
 
-async fn run_grpc_server(state: &AppState) -> anyhow::Result<()> {
+async fn run_grpc_server(state: &AppState, shutdown: Arc<Notify>) -> anyhow::Result<()> {
     debug!("gRPC server running");
 
-    rpc::run_dispatch_server(state).await?;
+    rpc::run_dispatch_server(state, shutdown).await?;
 
     Ok(())
 }
@@ -130,11 +133,51 @@ pub async fn run() -> anyhow::Result<()> {
         message_registry,
     );
 
-    let http_task = run_http_server(&app_state);
+    let shutdown = Arc::new(Notify::new());
 
-    let grpc_task = run_grpc_server(&app_state);
+    let shutdown_for_http = shutdown.clone();
+    let shutdown_for_grpc = shutdown.clone();
 
-    tokio::try_join!(http_task, grpc_task)?;
+    let ctrlc_notify = shutdown.clone();
+
+    let ctrlc_task = tokio::spawn(async move {
+        debug!("Shutdown listener waiting for CTRL-C");
+        if tokio::signal::ctrl_c().await.is_ok() {
+            debug!("CTRL-C received, notifying shutdown listeners");
+            ctrlc_notify.notify_waiters();
+        } else {
+            debug!("Failed to install CTRL-C handler");
+        }
+    });
+
+    let http_state = app_state.clone();
+    let grpc_state = app_state.clone();
+
+    let http_shutdown = shutdown_for_http.clone();
+
+    let http_task = tokio::spawn(async move {
+        let result = run_http_server(&http_state, shutdown_for_http).await;
+
+        http_shutdown.notify_waiters();
+
+        result
+    });
+
+    let grpc_shutdown = shutdown_for_grpc.clone();
+
+    let grpc_task = tokio::spawn(async move {
+        let result = run_grpc_server(&grpc_state, shutdown_for_grpc).await;
+
+        grpc_shutdown.notify_waiters();
+
+        result
+    });
+
+    let (http_res, grpc_res, _) = tokio::join!(http_task, grpc_task, ctrlc_task);
+
+    // Propagate any server errors
+    http_res??;
+    grpc_res??;
 
     Ok(())
 }

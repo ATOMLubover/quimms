@@ -1,8 +1,10 @@
-use std::net::SocketAddrV4;
+use std::{net::SocketAddrV4, sync::Arc};
 
 use axum::{Router, http::StatusCode, response::IntoResponse, routing};
 use tokio::net::TcpListener;
 use tracing::debug;
+
+use tokio::sync::Notify;
 
 use crate::{service, state::AppState};
 
@@ -20,32 +22,26 @@ async fn bind_addr(host: &str, port: u16) -> anyhow::Result<TcpListener> {
     Ok(listener)
 }
 
-async fn signal_term() {
-    debug!("SIGNAL TERM receiver installed");
-
-    tokio::signal::ctrl_c()
-        .await
-        .expect("Failed to install CTRL-C signal handler");
-
-    debug!("SIGNAL TERM received, shutting down gracefully...");
-}
-
 async fn new_router(state: &AppState) -> anyhow::Result<Router> {
     let router: Router = Router::new()
-        .route("/ws/:user_id", routing::get(websock::on_websock_connect))
+        .route("/ws/{user_id}", routing::get(websock::on_websock_connect))
         .route("/check", routing::get(health_check))
         .with_state(state.clone());
 
     Ok(router)
 }
 
-pub async fn run_server(state: &AppState) -> anyhow::Result<()> {
+pub async fn run_server(state: &AppState, shutdown: Arc<Notify>) -> anyhow::Result<()> {
     let listener = bind_addr(state.config().http_host(), state.config().http_port()).await?;
 
     let router = new_router(state).await?;
 
     axum::serve(listener, router.into_make_service())
-        .with_graceful_shutdown(signal_term())
+        .with_graceful_shutdown(async move {
+            debug!("HTTP server awaiting shutdown signal");
+            shutdown.notified().await;
+            debug!("HTTP server received shutdown signal");
+        })
         .await
         .map_err(|err| anyhow::anyhow!("Error running server: {}", err))?;
 
@@ -64,10 +60,9 @@ mod websock {
     use std::ops::ControlFlow;
 
     use axum::{
-        Extension,
         body::Bytes,
         extract::{
-            State,
+            Path, State,
             ws::{Message, WebSocket, WebSocketUpgrade},
         },
         response::IntoResponse,
@@ -85,7 +80,7 @@ mod websock {
     pub async fn on_websock_connect(
         upgrade: WebSocketUpgrade,
         State(app_state): State<AppState>,
-        Extension(user_id): Extension<String>,
+        Path(user_id): Path<String>,
     ) -> impl IntoResponse {
         debug!("Building websocket connection for user_id: {}", user_id);
 

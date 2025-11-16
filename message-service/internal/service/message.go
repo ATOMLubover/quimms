@@ -94,7 +94,7 @@ func GetMessagesByChannelID(
 			ChannelID: messagePO.PKChannelID,
 			SenderID:  messagePO.PKUserID,
 			Content:   messagePO.Content,
-			CreatedAt: messagePO.CreatedAt,
+			CreatedAt: messagePO.CreatedAt.Unix(),
 		})
 	}
 

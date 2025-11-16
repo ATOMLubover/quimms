@@ -21,8 +21,8 @@ func GetChannelIDsByUserID(db *gorm.DB, userID string) ([]string, error) {
 
 	err := db.
 		Model(&po.ChannelMemberPO{}).
-		Where("user_id = ?", userID).
-		Pluck("channel_id", &channelIDs).Error
+		Where("f_pk_user_id = ?", userID).
+		Pluck("f_pk_channel_id", &channelIDs).Error
 
 	return channelIDs, err
 }
@@ -31,7 +31,7 @@ func GetChannelMembers(db *gorm.DB, channelID string) ([]*po.ChannelMemberPO, er
 	var channelMemberPOs []*po.ChannelMemberPO
 
 	err := db.
-		Where("channel_id = ?", channelID).
+		Where("f_pk_channel_id = ?", channelID).
 		Find(&channelMemberPOs).Error
 
 	if err != nil {

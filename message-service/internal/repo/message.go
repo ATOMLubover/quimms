@@ -2,6 +2,7 @@ package repo
 
 import (
 	"message-service/internal/model/po"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +19,7 @@ func CreateMessage(
 		PKChannelID: channelID,
 		PKUserID:    userID,
 		Content:     content,
+		CreatedAt:   time.Now(),
 	}
 
 	return db.Create(newMessage).Error
@@ -31,10 +33,13 @@ func GetMessagesByChannelID(
 ) ([]po.ChannelMessagePO, error) {
 	var messages []po.ChannelMessagePO
 
+	// latestTime is unix seconds; convert to time.Time for comparison
+	latest := time.Unix(latestTime, 0)
+
 	err := db.
 		Where("f_pk_channel_id = ?", channelID).
 		Order("f_created_at DESC").
-		Where("f_created_at < ?", latestTime).
+		Where("f_created_at < ?", latest).
 		Limit(limit).
 		Find(&messages).Error
 

@@ -23,7 +23,7 @@ func GetChannelMembers(db *gorm.DB, channelID string) ([]*vo.ChannelMemberVO, er
 	for i, member := range members {
 		memberVOs[i] = &vo.ChannelMemberVO{
 			UserID:   member.UserID,
-			JoinedAt: member.CreatedAt,
+			JoinedAt: member.CreatedAt.Unix(),
 		}
 	}
 

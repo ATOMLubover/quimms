@@ -7,13 +7,15 @@ import (
 )
 
 type AppConfig struct {
-	ServiceID   string `mapstructure:"service_id"`
-	ServiceName string `mapstructure:"service_name"`
-	Host        string `mapstructure:"host"`
-	Port        uint16 `mapstructure:"port"`
-	MQURL       string `mapstructure:"mq_url"`
-	RedisURL    string `mapstructure:"redis_url"`
-	ConsulsAddr string `mapstructure:"consuls_addr"`
+	ServiceID            string `mapstructure:"service_id"`
+	ServiceName          string `mapstructure:"service_name"`
+	Host                 string `mapstructure:"host"`
+	Port                 uint16 `mapstructure:"port"`
+	MQURL                string `mapstructure:"mq_url"`
+	RedisURL             string `mapstructure:"redis_url"`
+	ConsulsAddr          string `mapstructure:"consuls_addr"`
+	HealthTTLSeconds     uint16 `mapstructure:"health_ttl_seconds"`
+	HealthRefreshSeconds uint16 `mapstructure:"health_refresh_seconds"`
 }
 
 func LoadConfig() (*AppConfig, error) {

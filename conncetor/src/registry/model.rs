@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -58,6 +58,7 @@ impl ServiceInfo {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct HeathCheck {
+    #[serde(rename = "TTL", serialize_with = "serialize_ttl")]
     pub ttl: Duration,
     #[serde(rename = "CheckID")]
     pub check_id: String,
@@ -84,6 +85,15 @@ impl HeathCheck {
     pub fn name(&self) -> &str {
         &self.name
     }
+}
+
+fn serialize_ttl<S>(d: &Duration, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    // Consul expects TTL as a string like "300s"
+    let s_val = format!("{}s", d.as_secs());
+    s.serialize_str(&s_val)
 }
 
 #[derive(Debug, Serialize, Deserialize)]

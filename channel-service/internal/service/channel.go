@@ -27,7 +27,7 @@ func GetChannelDetailsByIDs(db *gorm.DB, ids []string) ([]vo.ChannelVO, error) {
 		memberMap[member.ChannelID] = append(memberMap[member.ChannelID], vo.ChannelMemberVO{
 			ChannelID: member.ChannelID,
 			UserID:    member.UserID,
-			JoinedAt:  member.CreatedAt,
+			JoinedAt:  member.CreatedAt.Unix(),
 		})
 	}
 
@@ -35,9 +35,10 @@ func GetChannelDetailsByIDs(db *gorm.DB, ids []string) ([]vo.ChannelVO, error) {
 
 	for _, channel := range channelsPO {
 		channelVO := vo.ChannelVO{
-			ID:      channel.ID,
-			Name:    channel.Name,
-			Members: memberMap[channel.ID],
+			ID:        channel.ID,
+			Name:      channel.Name,
+			CreatedAt: channel.CreatedAt.Unix(),
+			Members:   memberMap[channel.ID],
 		}
 
 		channelVOs = append(channelVOs, channelVO)

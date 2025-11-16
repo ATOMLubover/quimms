@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"strconv"
 
 	"github.com/bwmarrin/snowflake"
 	"google.golang.org/grpc"
@@ -29,7 +28,9 @@ func newServer(cfg *config.AppConfig) (pb.ChannelServiceServer, error) {
 		return nil, err
 	}
 
-	serviceIDNum, err := strconv.Atoi(cfg.ServiceID)
+	var serviceIDNum int
+
+	_, err = fmt.Sscanf(cfg.ServiceID, "ChannelService-%d", &serviceIDNum)
 
 	if err != nil {
 		return nil, err
@@ -45,6 +46,7 @@ func newServer(cfg *config.AppConfig) (pb.ChannelServiceServer, error) {
 		cfg.ConsulsAddr,
 		cfg.ServiceID, cfg.ServiceName,
 		cfg.Host, int(cfg.Port),
+		int(cfg.HealthTTLSeconds), int(cfg.HealthRefreshSeconds),
 	)
 
 	return &serverImpl{

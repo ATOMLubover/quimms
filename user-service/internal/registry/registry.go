@@ -2,7 +2,7 @@ package registry
 
 import (
 	"fmt"
-	"net/http"
+	"time"
 
 	consulapi "github.com/hashicorp/consul/api"
 )
@@ -11,6 +11,7 @@ func RunRegistryClient(
 	consulsAddr string,
 	serviceID, serviceName string,
 	serviceAddr string, servicePort int,
+	ttlSeconds int, refreshSeconds int,
 ) error {
 	cfg := consulapi.DefaultConfig()
 
@@ -22,14 +23,18 @@ func RunRegistryClient(
 		return err
 	}
 
+	checkID := fmt.Sprintf("%s-%s", serviceName, serviceID)
+	ttlStr := fmt.Sprintf("%ds", ttlSeconds)
+
 	reg := &consulapi.AgentServiceRegistration{
 		ID:      serviceID,
 		Name:    serviceName,
 		Address: serviceAddr,
 		Port:    servicePort,
 		Check: &consulapi.AgentServiceCheck{
-			HTTP:                           fmt.Sprintf("http://%s:%d/health", serviceAddr, servicePort),
-			TTL:                            "10s",
+			CheckID:                        checkID,
+			Name:                           serviceName,
+			TTL:                            ttlStr,
 			DeregisterCriticalServiceAfter: "1m",
 		},
 	}
@@ -38,14 +43,17 @@ func RunRegistryClient(
 		return err
 	}
 
-	// Detach a goroutine to periodically response to the TTL health check.
+	// Active TTL refresh loop (like connector): periodically mark check passing.
 	go func() {
-		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
-		})
-
-		http.ListenAndServe(fmt.Sprintf("%s:%d", serviceAddr, servicePort), nil)
+		if refreshSeconds <= 0 {
+			refreshSeconds = 5
+		}
+		ticker := time.NewTicker(time.Duration(refreshSeconds) * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			// Pass the TTL check; if it fails, just continue and let next tick retry.
+			_ = client.Agent().PassTTL(checkID, "ok")
+		}
 	}()
 
 	return nil

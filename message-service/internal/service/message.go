@@ -23,9 +23,9 @@ func CreateMessage(
 	newID := "message_" + node.Generate().Base64()
 
 	msgVO := vo.ChannelMessageVO{
-		ID:        newID,
-		ChannelID: data.ChannelID,
-		SenderID:  data.UserID,
+		MsgID:     newID,
+		ChanID:    data.ChannelID,
+		UserID:    data.UserID,
 		Content:   data.Content,
 		CreatedAt: time.Now().Unix(),
 	}
@@ -90,9 +90,9 @@ func GetMessagesByChannelID(
 
 	for _, messagePO := range messagePOs {
 		messageVOs = append(messageVOs, vo.ChannelMessageVO{
-			ID:        messagePO.ID,
-			ChannelID: messagePO.PKChannelID,
-			SenderID:  messagePO.PKUserID,
+			MsgID:     messagePO.ID,
+			ChanID:    messagePO.PKChannelID,
+			UserID:    messagePO.PKUserID,
 			Content:   messagePO.Content,
 			CreatedAt: messagePO.CreatedAt.Unix(),
 		})

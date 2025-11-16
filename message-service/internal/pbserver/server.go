@@ -133,9 +133,9 @@ func (s *serverImpl) ListChannelMessages(
 
 	for i, messageVO := range messageVOs {
 		messages[i] = &pb.Message{
-			MessageId: messageVO.ID,
-			ChannelId: messageVO.ChannelID,
-			SenderId:  messageVO.SenderID,
+			MessageId: messageVO.MsgID,
+			ChannelId: messageVO.ChanID,
+			SenderId:  messageVO.UserID,
 			Content:   messageVO.Content,
 			CreatedAt: messageVO.CreatedAt,
 		}

@@ -103,7 +103,7 @@ func (c *Client) PushMsg(msg vo.ChannelMessageVO) error {
 	_, err := redis.
 		NewScript(kExistAndExpScript).
 		Run(ctx, c.rdb, []string{
-			kChanMsgPrefix + msg.ChannelID,
+			kChanMsgPrefix + msg.ChanID,
 		}, kChanMsgEx).
 		Result()
 
@@ -119,7 +119,7 @@ func (c *Client) PushMsg(msg vo.ChannelMessageVO) error {
 
 		defer cancel()
 
-		_, err = c.rdb.LPush(ctx, msg.ChannelID, msgStr).Result()
+		_, err = c.rdb.LPush(ctx, msg.ChanID, msgStr).Result()
 
 		return err
 	}
@@ -141,7 +141,7 @@ func (c *Client) PushMsg(msg vo.ChannelMessageVO) error {
 
 	defer cancel()
 
-	_, err = c.rdb.LPush(ctx, msg.ChannelID, msgStr).Result()
+	_, err = c.rdb.LPush(ctx, msg.ChanID, msgStr).Result()
 
 	return err
 }
